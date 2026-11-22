@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星圖學堂．白話紫微｜現代知性紫微斗數互動學習平台</title>
+    <!-- 載入 Google Fonts：Noto Serif TC (襯線主標題) 與 Noto Sans TC (無襯線內文) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: '#FAF8F5',       // 全站主背景色：宣紙暖白
+                        indigoMain: '#232B42',  // 主品牌色：紫微靛藍
+                        amberGold: '#D4A359',   // 強調點綴色：暖陽琥珀金
+                        inkDark: '#33363F',     // 主要文字色：墨韻深灰
+                        inkMuted: '#7A808E',    // 次要文字色
+                        starMajor: '#6B5B95',   // 十四主星：沉穩紫
+                        starLucky: '#2E8B75',   // 六吉星：翠玉青
+                        starTough: '#D96B43',   // 六煞星：赭石橘
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif TC"', 'serif'],
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'editorial': '0 8px 24px rgba(35, 43, 66, 0.06)',
+                        'editorial-lg': '0 12px 32px rgba(35, 43, 66, 0.12)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- 引入精準公曆轉農曆與干支計算庫 (lunar-javascript CDN，確保 1900-2100 閏月與節氣 100% 精準) -->
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.min.js"></script>
+    <style>
+        /* 自定義細節與滾動條 */
+        body {
+            background-color: #FAF8F5;
+            color: #33363F;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+        }
+        .font-serif-title {
+            font-family: 'Noto Serif TC', serif;
+        }
+        /* 四化語意膠囊樣式 */
+        .sihua-lu { background-color: #E6F4EA; color: #1E7E34; border: 1px solid #CEEAD6; }
+        .sihua-quan { background-color: #FEF7E0; color: #B06000; border: 1px solid #FEEFC3; }
+        .sihua-ke { background-color: #E8F0FE; color: #1967D2; border: 1px solid #D2E3FC; }
+        .sihua-ji { background-color: #FCE8E6; color: #C5221F; border: 1px solid #FAD2CF; }
+
+        /* 命盤格子互動高亮動畫 */
+        .palace-cell {
+            transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .palace-selected {
+            border-color: #D4A359 !important;
+            background-color: #FFFDF9 !important;
+            box-shadow: 0 0 0 2px #D4A359, 0 8px 20px rgba(212, 163, 89, 0.18);
+            z-index: 10;
+        }
+        .palace-sanfang {
+            border-color: #232B42 !important;
+            background-color: #F4F6FA !important;
+            box-shadow: inset 0 0 0 1px rgba(35, 43, 66, 0.3);
+        }
+
+        /* 隱藏水平滾動條但保留滑動能力 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 抽屜與 Modal 過渡動畫 */
+        .sheet-enter {
+            transform: translateY(100%);
+        }
+        .sheet-active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-amberGold/30 selection:text-indigoMain">
+
+    <!-- ==========================================
+         1. 頂部導覽列 (RWD Header + 毛玻璃漢堡選單)
+         ========================================== -->
+    <header class="sticky top-0 z-40 bg-paper/90 backdrop-blur-md border-b border-indigoMain/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <a href="#" class="flex items-center gap-2.5 group">
+                <div class="w-9 h-9 rounded-full bg-indigoMain text-amberGold flex items-center justify-center font-serif-title font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
+                    星
+                </div>
+                <div>
+                    <span class="font-serif-title font-bold text-lg md:text-xl text-indigoMain tracking-wide">星圖學堂</span>
+                    <span class="hidden sm:inline-block text-xs text-inkMuted ml-1.5 pl-1.5 border-l border-inkMuted/30">白話紫微</span>
+                </div>
+            </a>
+
+            <!-- Desktop Navigation -->
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-inkDark">
+                <a href="#chart-workspace" class="hover:text-amberGold transition-colors py-2">互動排盤</a>
+                <a href="#learning-roadmap" class="hover:text-amberGold transition-colors py-2">學習地圖</a>
+                <a href="#stars-encyclopedia" class="hover:text-amberGold transition-colors py-2">十四主星圖鑑</a>
+                <a href="#life-columns" class="hover:text-amberGold transition-colors py-2">生活專欄</a>
+                <a href="#faq-section" class="hover:text-amberGold transition-colors py-2">新手 Q&amp;A</a>
+            </nav>
+
+            <!-- CTA & Mobile Hamburger -->
+            <div class="flex items-center gap-2.5">
+                <a href="#hero-form" class="px-4 py-2 md:px-5 md:py-2.5 rounded-full bg-amberGold hover:bg-[#c59347] text-indigoMain font-bold text-xs md:text-sm shadow-sm transition-all active:scale-95">
+                    立即排盤
+                </a>
+                <!-- Mobile Hamburger Button -->
+                <button id="mobile-menu-btn" type="button" aria-label="開啟選單" class="md:hidden p-2.5 rounded-xl text-indigoMain hover:bg-indigoMain/5 focus:outline-none">
+                    <svg id="hamburger-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                    <svg id="close-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Glass Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white/95 backdrop-blur-lg border-b border-indigoMain/10 px-6 py-5 shadow-editorial-lg">
+            <nav class="flex flex-col space-y-3 text-base font-medium text-indigoMain">
+                <a href="#chart-workspace" class="mobile-nav-link py-2.5 px-3 rounded-xl hover:bg-paper flex items-center justify-between">
+                    <span>互動排盤工作區</span>
+                    <span class="text-xs text-amberGold">Chart</span>
+                </a>
+                <a href="#learning-roadmap" class="mobile-nav-link py-2.5 px-3 rounded-xl hover:bg-paper flex items-center justify-between">
+                    <span>新手四步學習地圖</span>
+                    <span class="text-xs text-inkMuted">Roadmap</span>
+                </a>
+                <a href="#stars-encyclopedia" class="mobile-nav-link py-2.5 px-3 rounded-xl hover:bg-paper flex items-center justify-between">
+                    <span>十四主星人格圖鑑</span>
+                    <span class="text-xs text-inkMuted">14 Stars</span>
+                </a>
+                <a href="#life-columns" class="mobile-nav-link py-2.5 px-3 rounded-xl hover:bg-paper flex items-center justify-between">
+                    <span>情境式生活專欄</span>
+                    <span class="text-xs text-inkMuted">Columns</span>
+                </a>
+                <a href="#faq-section" class="mobile-nav-link py-2.5 px-3 rounded-xl hover:bg-paper flex items-center justify-between">
+                    <span>新手破冰 Q&amp;A</span>
+                    <span class="text-xs text-inkMuted">FAQ</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ==========================================
+         2. 首屏主視覺與零門檻排盤區 (Hero & Form)
+         ========================================== -->
+    <section id="hero-form" class="pt-8 pb-12 md:pt-16 md:pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            <!-- 左欄文案 (Desktop 7 cols) -->
+            <div class="lg:col-span-7 space-y-5 md:space-y-6 text-left">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigoMain/5 border border-indigoMain/10 text-indigoMain text-xs md:text-sm font-medium">
+                    <span class="w-2 h-2 rounded-full bg-amberGold"></span>
+                    <span>不談宿命恐嚇．只做自我覺察與人格優勢探索</span>
+                </div>
+
+                <h1 class="font-serif-title text-3xl sm:text-4xl lg:text-5xl font-bold text-indigoMain leading-tight tracking-tight">
+                    紫微斗數，其實是一張<br class="hidden sm:inline">你的<span class="text-amberGold underline decoration-amberGold/40 decoration-4 underline-offset-8">人生使用說明書</span>。
+                </h1>
+
+                <p class="text-inkMuted text-base md:text-lg leading-relaxed max-w-2xl">
+                    放下艱澀難懂的古文口訣。透過現代心理學與行為分析視角，我們把十二宮位翻譯成你熟悉的「人生舞台」，讓十四顆主星成為你內在的「性格團隊成員」。輸入生日，三分鐘看懂你的天賦配置。
+                </p>
+
+                <!-- 亮點標籤 -->
+                <div class="grid grid-cols-3 gap-3 pt-2 max-w-lg">
+                    <div class="p-3 rounded-xl bg-white shadow-editorial border border-indigoMain/5">
+                        <div class="font-serif-title font-bold text-indigoMain text-lg md:text-xl">12 宮位</div>
+                        <div class="text-xs text-inkMuted mt-0.5">職場・感情・財富全景</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-white shadow-editorial border border-indigoMain/5">
+                        <div class="font-serif-title font-bold text-starMajor text-lg md:text-xl">14 主星</div>
+                        <div class="text-xs text-inkMuted mt-0.5">白話職場人格解析</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-white shadow-editorial border border-indigoMain/5">
+                        <div class="font-serif-title font-bold text-starLucky text-lg md:text-xl">三方四正</div>
+                        <div class="text-xs text-inkMuted mt-0.5">一鍵視覺化支援網絡</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右欄排盤輸入框 (Desktop 5 cols, Mobile Full-width) -->
+            <div class="lg:col-span-5">
+                <div class="bg-white rounded-[12px] p-6 sm:p-8 shadow-editorial-lg border border-indigoMain/10">
+                    <div class="flex items-center justify-between mb-5">
+                        <div>
+                            <h2 class="font-serif-title text-xl font-bold text-indigoMain">建立你的專屬星圖</h2>
+                            <p class="text-xs text-inkMuted mt-1">支援 1901–2099 年精準國曆／農曆閏月換算</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-paper text-indigoMain text-xs font-medium border border-indigoMain/10">正統安星</span>
+                    </div>
+
+                    <form id="birth-form" class="space-y-4">
+                        <!-- 稱呼與性別 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="input-name" class="block text-xs font-medium text-inkDark mb-1.5">你的稱呼（選填）</label>
+                                <input type="text" id="input-name" placeholder="例如：林小滿" value="星圖探索者"
+                                    class="w-full px-4 py-3 rounded-xl bg-paper border border-gray-200 text-sm text-inkDark focus:outline-none focus:border-amberGold focus:bg-white transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-inkDark mb-1.5">生理性別（決定大限順逆）</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="gender" value="female" checked class="peer sr-only">
+                                        <div class="py-3 text-center rounded-xl border border-gray-200 bg-paper text-sm font-medium text-inkMuted peer-checked:bg-indigoMain peer-checked:text-white peer-checked:border-indigoMain transition-all">
+                                            女性
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="gender" value="male" class="peer sr-only">
+                                        <div class="py-3 text-center rounded-xl border border-gray-200 bg-paper text-sm font-medium text-inkMuted peer-checked:bg-indigoMain peer-checked:text-white peer-checked:border-indigoMain transition-all">
+                                            男性
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 曆法與出生日期 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="input-calendar" class="block text-xs font-medium text-inkDark mb-1.5">曆法類型</label>
+                                <select id="input-calendar" class="w-full px-4 py-3 rounded-xl bg-paper border border-gray-200 text-sm text-inkDark focus:outline-none focus:border-amberGold focus:bg-white">
+                                    <option value="solar" selected>國曆（陽曆）</option>
+                                    <option value="lunar">農曆（陰曆）</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="input-date" class="block text-xs font-medium text-inkDark mb-1.5">出生年月日</label>
+                                <input type="date" id="input-date" value="1995-08-18" min="1901-02-19" max="2099-12-31" required
+                                    class="w-full px-4 py-3 rounded-xl bg-paper border border-gray-200 text-sm text-inkDark focus:outline-none focus:border-amberGold focus:bg-white">
+                            </div>
+                        </div>
+
+                        <!-- 農曆閏月選項（僅在選擇農曆時顯示） -->
+                        <div id="lunar-leap-wrapper" class="hidden">
+                            <label class="inline-flex items-center gap-2 text-xs font-medium text-indigoMain cursor-pointer">
+                                <input type="checkbox" id="input-is-leap" class="rounded border-gray-300 text-indigoMain focus:ring-amberGold">
+                                <span>此出生月份為「農曆閏月」（若不確定請勿勾選）</span>
+                            </label>
+                        </div>
+
+                        <!-- 出生時辰（區分早子時與夜子時，24小時精準對應） -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label for="input-hour" class="text-xs font-medium text-inkDark">出生時間（區分早子與夜子時）</label>
+                                <button type="button" id="hour-help-btn" class="text-xs text-amberGold hover:underline flex items-center gap-1 font-medium">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>不知道時辰怎麼辦？</span>
+                                </button>
+                            </div>
+                            <select id="input-hour" class="w-full px-4 py-3 rounded-xl bg-paper border border-gray-200 text-sm text-inkDark focus:outline-none focus:border-amberGold focus:bg-white">
+                                <option value="0">00:00 - 00:59（早子時）</option>
+                                <option value="1">01:00 - 01:59（丑時）</option>
+                                <option value="2">02:00 - 02:59（丑時）</option>
+                                <option value="3">03:00 - 03:59（寅時）</option>
+                                <option value="4">04:00 - 04:59（寅時）</option>
+                                <option value="5">05:00 - 05:59（卯時）</option>
+                                <option value="6">06:00 - 06:59（卯時）</option>
+                                <option value="7">07:00 - 07:59（辰時）</option>
+                                <option value="8" selected>08:00 - 08:59（辰時）</option>
+                                <option value="9">09:00 - 09:59（巳時）</option>
+                                <option value="10">10:00 - 10:59（巳時）</option>
+                                <option value="11">11:00 - 11:59（午時）</option>
+                                <option value="12">12:00 - 12:59（午時）</option>
+                                <option value="13">13:00 - 13:59（未時）</option>
+                                <option value="14">14:00 - 14:59（未時）</option>
+                                <option value="15">15:00 - 15:59（申時）</option>
+                                <option value="16">16:00 - 16:59（申時）</option>
+                                <option value="17">17:00 - 17:59（酉時）</option>
+                                <option value="18">18:00 - 18:59（酉時）</option>
+                                <option value="19">19:00 - 19:59（戌時）</option>
+                                <option value="20">20:00 - 20:59（戌時）</option>
+                                <option value="21">21:00 - 21:59（亥時）</option>
+                                <option value="22">22:00 - 22:59（亥時）</option>
+                                <option value="23">23:00 - 23:59（夜子時｜日柱跨日）</option>
+                            </select>
+                            <!-- 提示折疊框 -->
+                            <div id="hour-help-box" class="hidden mt-2.5 p-3.5 rounded-xl bg-amberGold/10 border border-amberGold/30 text-xs text-inkDark leading-relaxed">
+                                <strong>💡 貼心小建議：</strong><br>
+                                1. 可向父母長輩確認，或攜帶身分證至任一戶政事務所申請「出生證明書」查詢精確時間。<br>
+                                2. 晚間 23:00–23:59 為「夜子時」，本系統會依照正統紫微規則自動將日數進位至隔日計算。
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-3.5 px-6 rounded-full bg-indigoMain hover:bg-[#1a2033] text-white font-bold text-sm md:text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]">
+                            <span>生成我的白話命盤</span>
+                            <svg class="w-4 h-4 text-amberGold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         3. 互動命盤工作區 (RWD 雙模式 + 白話角色解析)
+         ========================================== -->
+    <section id="chart-workspace" class="py-12 md:py-16 bg-white border-y border-indigoMain/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- 區塊頂部控制列 -->
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+                <div>
+                    <span class="text-xs font-bold tracking-wider uppercase text-amberGold">Interactive Natal Chart</span>
+                    <h2 class="font-serif-title text-2xl md:text-3xl font-bold text-indigoMain mt-1">你的十二宮位互動星圖</h2>
+                    <p class="text-sm text-inkMuted mt-1">點擊任一宮位，即可查看該領域的白話角色解析，並自動標示「三方四正」支援宮位。</p>
+                </div>
+
+                <!-- 控制工具列：新手/進階切換 + AI 提示詞 + 手機視圖切換 -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- 新手/進階模式切換 -->
+                    <div class="inline-flex p-1 rounded-full bg-paper border border-indigoMain/10">
+                        <button type="button" id="mode-beginner-btn" class="px-3.5 py-1.5 rounded-full text-xs font-medium bg-indigoMain text-white shadow-xs transition-all">
+                            新手模式（主星＋四化）
+                        </button>
+                        <button type="button" id="mode-advanced-btn" class="px-3.5 py-1.5 rounded-full text-xs font-medium text-inkMuted hover:text-indigoMain transition-all">
+                            進階模式（含六吉六煞）
+                        </button>
+                    </div>
+
+                    <!-- 手機版專屬：卡片流 vs 傳統12宮縮圖切換 -->
+                    <div class="md:hidden inline-flex p-1 rounded-full bg-paper border border-indigoMain/10">
+                        <button type="button" id="mobile-view-cards" class="px-3 py-1.5 rounded-full text-xs font-medium bg-amberGold text-indigoMain font-bold transition-all">
+                            卡片閱讀
+                        </button>
+                        <button type="button" id="mobile-view-grid" class="px-3 py-1.5 rounded-full text-xs font-medium text-inkMuted transition-all">
+                            12宮縮圖
+                        </button>
+                    </div>
+
+                    <!-- 一鍵複製 AI 命理分析提示詞 -->
+                    <button type="button" id="copy-ai-prompt-btn" class="px-3.5 py-1.5 rounded-full bg-paper hover:bg-indigoMain hover:text-white border border-indigoMain/15 text-xs font-medium text-indigoMain transition-all flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-amberGold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                        <span id="copy-prompt-text">複製 AI 提示詞</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 圖例說明列 -->
+            <div class="flex flex-wrap items-center gap-3 md:gap-5 text-xs text-inkMuted mb-6 pb-4 border-b border-gray-100">
+                <span class="font-medium text-inkDark">圖例說明：</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-starMajor"></span>十四主星（核心性格）</span>
+                <span class="adv-legend hidden inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-starLucky"></span>六吉星（助力資源）</span>
+                <span class="adv-legend hidden inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-starTough"></span>六煞星（挑戰動能）</span>
+                <span class="inline-flex items-center gap-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold sihua-lu">祿</span>順遂資源</span>
+                <span class="inline-flex items-center gap-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold sihua-quan">權</span>主導掌控</span>
+                <span class="inline-flex items-center gap-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold sihua-ke">科</span>貴人聲譽</span>
+                <span class="inline-flex items-center gap-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold sihua-ji">忌</span>執著課題</span>
+            </div>
+
+            <!-- 命盤主體 + 右側白話解析面板 (Desktop 12 cols: 8 cols chart + 4 cols inspector) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+                <!-- 左側：命盤渲染容器 -->
+                <div class="lg:col-span-8">
+                    <!-- A. 手機版預設：2 欄宮位卡片流 (<768px 且 mobileView === 'cards') -->
+                    <div id="mobile-cards-container" class="md:hidden">
+                        <!-- 命主資訊橫幅 -->
+                        <div id="mobile-user-banner" class="p-4 rounded-xl bg-indigoMain text-white mb-4 flex items-center justify-between">
+                            <!-- JS 動態填入 -->
+                        </div>
+                        <div id="mobile-palace-cards" class="grid grid-cols-2 gap-3">
+                            <!-- JS 動態生成 12 張宮位卡片 -->
+                        </div>
+                    </div>
+
+                    <!-- B. 經典 4×4 紫微斗數十二宮位方格圖 (平板/桌機預設顯示；手機切換「12宮縮圖」時顯示) -->
+                    <div id="classic-grid-wrapper" class="hidden md:block">
+                        <div class="grid grid-cols-4 gap-1.5 sm:gap-2.5 bg-paper p-2 sm:p-3.5 rounded-[12px] border border-indigoMain/15 shadow-inner" id="ziwei-4x4-grid">
+                            <!-- JS 動態生成 4x4 格子與中央 2x2 命主資訊框 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：白話角色解析面板 (Desktop & Tablet 固定顯示) -->
+                <div class="hidden md:block lg:col-span-4 sticky top-24">
+                    <div id="desktop-inspector-panel" class="bg-paper rounded-[12px] p-6 border border-indigoMain/10 shadow-editorial">
+                        <!-- JS 動態更新選中宮位的白話解析 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 手機版專屬：底部抽屜 (Bottom Sheet) 白話角色解析面板 -->
+    <div id="mobile-bottom-sheet-backdrop" class="fixed inset-0 z-50 bg-indigoMain/50 backdrop-blur-xs hidden md:hidden transition-opacity">
+        <div id="mobile-bottom-sheet" class="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl max-h-[82vh] overflow-y-auto p-6 shadow-2xl transition-transform duration-300 sheet-enter">
+            <!-- 拖曳指示條與關閉鈕 -->
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 sticky top-0 bg-white z-10">
+                <div class="w-10 h-1.5 bg-gray-300 rounded-full mx-auto"></div>
+                <button type="button" id="close-bottom-sheet-btn" class="p-1.5 rounded-full bg-paper text-inkMuted hover:text-indigoMain">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="mobile-sheet-content">
+                <!-- JS 動態填入與桌機一致的白話解析 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         4. 新手學習地圖 (4 步驟闖關路線)
+         ========================================== -->
+    <section id="learning-roadmap" class="py-14 md:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div class="text-center max-w-2xl mx-auto mb-10 md:mb-14">
+            <span class="text-xs font-bold tracking-wider uppercase text-amberGold">Step-by-Step Guide</span>
+            <h2 class="font-serif-title text-2xl md:text-4xl font-bold text-indigoMain mt-1.5">零基礎四步驟學習地圖</h2>
+            <p class="text-sm md:text-base text-inkMuted mt-3">把紫微斗數想像成一場「舞台劇」：先認識十二座舞台，再看懂十四位演員的個性，最後觀察劇本如何隨時間推進。</p>
+        </div>
+
+        <!-- 4 步驟卡片網格 (Desktop 4 cols, Tablet 2 cols, Mobile 1 col) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6" id="roadmap-cards">
+            <!-- Step 1 -->
+            <div class="roadmap-card bg-white rounded-[12px] p-6 shadow-editorial border border-indigoMain/5 hover:border-amberGold/60 transition-all cursor-pointer group" data-step="0">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="px-3 py-1 rounded-full bg-indigoMain text-amberGold font-serif-title font-bold text-xs">STEP 01</span>
+                    <span class="text-xs text-inkMuted group-hover:text-amberGold transition-colors">點擊展開圖解 →</span>
+                </div>
+                <h3 class="font-serif-title text-xl font-bold text-indigoMain mb-2">認識地盤：十二宮位</h3>
+                <p class="text-sm text-inkMuted leading-relaxed">人生由十二個領域組成。命宮是你的核心人設，官祿宮看職場舞台，夫妻宮看親密關係互動。</p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="roadmap-card bg-white rounded-[12px] p-6 shadow-editorial border border-indigoMain/5 hover:border-amberGold/60 transition-all cursor-pointer group" data-step="1">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="px-3 py-1 rounded-full bg-indigoMain text-amberGold font-serif-title font-bold text-xs">STEP 02</span>
+                    <span class="text-xs text-inkMuted group-hover:text-amberGold transition-colors">點擊展開圖解 →</span>
+                </div>
+                <h3 class="font-serif-title text-xl font-bold text-indigoMain mb-2">認識主角：十四主星</h3>
+                <p class="text-sm text-inkMuted leading-relaxed">星曜沒有絕對好壞，只有「風格差異」。紫微像領導者、天機像軍師、太陽像燃燒的推廣者。</p>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="roadmap-card bg-white rounded-[12px] p-6 shadow-editorial border border-indigoMain/5 hover:border-amberGold/60 transition-all cursor-pointer group" data-step="2">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="px-3 py-1 rounded-full bg-indigoMain text-amberGold font-serif-title font-bold text-xs">STEP 03</span>
+                    <span class="text-xs text-inkMuted group-hover:text-amberGold transition-colors">點擊展開圖解 →</span>
+                </div>
+                <h3 class="font-serif-title text-xl font-bold text-indigoMain mb-2">看懂互動：三方四正</h3>
+                <p class="text-sm text-inkMuted leading-relaxed">沒有一座宮位是孤島！看事業不能只看官祿宮，還要同時檢視「命宮、財帛宮、夫妻宮」的支援。</p>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="roadmap-card bg-white rounded-[12px] p-6 shadow-editorial border border-indigoMain/5 hover:border-amberGold/60 transition-all cursor-pointer group" data-step="3">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="px-3 py-1 rounded-full bg-indigoMain text-amberGold font-serif-title font-bold text-xs">STEP 04</span>
+                    <span class="text-xs text-inkMuted group-hover:text-amberGold transition-colors">點擊展開圖解 →</span>
+                </div>
+                <h3 class="font-serif-title text-xl font-bold text-indigoMain mb-2">掌握時間：四化與運限</h3>
+                <p class="text-sm text-inkMuted leading-relaxed">祿、權、科、忌是推動劇情的四股能量；大限（十年）與流年（一年）則是人生不同階段的季節氣象。</p>
+            </div>
+        </div>
+
+        <!-- 步驟詳細圖解展開面板 -->
+        <div id="roadmap-detail-box" class="mt-6 bg-white rounded-[12px] p-6 md:p-8 shadow-editorial border border-amberGold/40 transition-all">
+            <!-- JS 動態填入當前選中步驟的圖解教學 -->
+        </div>
+    </section>
+
+    <!-- ==========================================
+         5. 十四主星人格圖鑑 (篩選 + 優勢盲點 Modal)
+         ========================================== -->
+    <section id="stars-encyclopedia" class="py-14 md:py-20 bg-white border-y border-indigoMain/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+                <div>
+                    <span class="text-xs font-bold tracking-wider uppercase text-amberGold">14 Major Stars Archetypes</span>
+                    <h2 class="font-serif-title text-2xl md:text-4xl font-bold text-indigoMain mt-1">十四主星現代人格圖鑑</h2>
+                    <p class="text-sm md:text-base text-inkMuted mt-2">點擊任一張星曜卡片，深入閱讀該性格原型的「天賦優勢」與「潛在盲點」。</p>
+                </div>
+
+                <!-- 星系篩選按鈕 -->
+                <div class="inline-flex p-1 rounded-full bg-paper border border-indigoMain/10 self-start md:self-auto">
+                    <button type="button" class="star-filter-btn px-4 py-2 rounded-full text-xs md:text-sm font-medium bg-indigoMain text-white transition-all" data-filter="all">
+                        全部主星 (14)
+                    </button>
+                    <button type="button" class="star-filter-btn px-4 py-2 rounded-full text-xs md:text-sm font-medium text-inkMuted hover:text-indigoMain transition-all" data-filter="beidou">
+                        北斗星系 (6)
+                    </button>
+                    <button type="button" class="star-filter-btn px-4 py-2 rounded-full text-xs md:text-sm font-medium text-inkMuted hover:text-indigoMain transition-all" data-filter="nandou">
+                        南斗星系 (8)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 14 主星網格 (Desktop 4 cols, Tablet 2 cols, Mobile 1 col) -->
+            <div id="stars-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <!-- JS 動態渲染完整 14 顆主星 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         6. 情境式生活專欄 (職場・感情・財富)
+         ========================================== -->
+    <section id="life-columns" class="py-14 md:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div class="text-center max-w-2xl mx-auto mb-10 md:mb-14">
+            <span class="text-xs font-bold tracking-wider uppercase text-amberGold">Practical Scenarios</span>
+            <h2 class="font-serif-title text-2xl md:text-4xl font-bold text-indigoMain mt-1.5">情境式生活專欄：把命盤用在日常</h2>
+            <p class="text-sm md:text-base text-inkMuted mt-3">命理不是用來算「會不會發財」，而是幫你找出最適合自己的賽道、溝通模式與理財節奏。</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8" id="columns-grid">
+            <!-- JS 動態渲染三篇情境專欄卡片 -->
+        </div>
+    </section>
+
+    <!-- ==========================================
+         7. 新手破冰 Q&A (手風琴折疊面板)
+         ========================================== -->
+    <section id="faq-section" class="py-14 md:py-20 bg-white border-t border-indigoMain/10">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10">
+                <span class="text-xs font-bold tracking-wider uppercase text-amberGold">Beginner Myth-Busting</span>
+                <h2 class="font-serif-title text-2xl md:text-3xl font-bold text-indigoMain mt-1.5">新手破冰 Q&amp;A</h2>
+                <p class="text-sm text-inkMuted mt-2">用理性、溫暖且科學的態度，解開你對紫微斗數的第一道疑問。</p>
+            </div>
+
+            <div class="space-y-3.5" id="faq-accordion">
+                <!-- JS 動態生成 4 個手風琴問答 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         8. 頁尾 (Footer)
+         ========================================== -->
+    <footer class="bg-indigoMain text-white/80 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-amberGold text-indigoMain flex items-center justify-center font-serif-title font-bold">星</div>
+                <div>
+                    <div class="font-serif-title font-bold text-white text-base">星圖學堂．白話紫微</div>
+                    <div class="text-xs text-white/60">探索內在性格星圖，活出清醒而自由的人生選擇。</div>
+                </div>
+            </div>
+            <div class="text-xs text-white/60 text-center md:text-right">
+                <p>本網站採用正統農曆換算與標準安星法，旨在提供人格特質與自我探索教育參考，非醫療或投資建議。</p>
+                <p class="mt-1">© 2025 星圖學堂 ZiWei Modern Academy. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==========================================
+         通用詳情彈窗 (Modal：用於十四主星詳解 & 生活專欄全文)
+         ========================================== -->
+    <div id="universal-modal" class="fixed inset-0 z-50 bg-indigoMain/60 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white rounded-[16px] max-w-xl w-full max-h-[88vh] overflow-y-auto shadow-2xl border border-indigoMain/10 animate-fadeIn">
+            <div class="sticky top-0 bg-white/95 backdrop-blur-xs px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <span id="modal-badge" class="px-3 py-1 rounded-full bg-paper text-indigoMain text-xs font-bold">詳情解析</span>
+                <button type="button" id="close-modal-btn" class="p-1.5 rounded-full hover:bg-paper text-inkMuted hover:text-indigoMain transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="modal-body" class="p-6 sm:p-8">
+                <!-- JS 動態填入 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         JavaScript 核心邏輯與資料庫
+         ========================================== -->
+    <script>
+        // ==========================================
+        // 1. 完整知識資料庫 (14主星、12宮位、學習地圖、專欄、Q&A)
+        // ==========================================
+
+        const FOURTEEN_STARS = [
+            {
+                id: 'ziwei', name: '紫微', group: 'beidou', groupName: '北斗星系',
+                role: '團隊領袖與決策者',
+                tags: ['#天生氣場', '#統籌大局', '#自尊心強'],
+                oneLiner: '習慣站在制高點思考全局，擁有不怒自威的領袖氣質與包容力。',
+                strengths: '具備宏觀視野與資源整合能力，在混亂局勢中能迅速定調方向，樂於提攜後進且重視榮譽感。',
+                blindSpots: '容易因為太愛面子而獨自扛下過多壓力，不輕易示弱求助；有時主觀意識較強，需練習傾聽基層聲音。',
+                careerTip: '適合管理職、專案總監、創業者或能獨立主導決策的核心崗位。'
+            },
+            {
+                id: 'tianji', name: '天機', group: 'beidou', groupName: '北斗星系',
+                role: '策略軍師與點子王',
+                tags: ['#思維敏捷', '#善於分析', '#靈活應變'],
+                oneLiner: '腦袋轉速極快的智多星，總能在第一時間看出問題背後的邏輯與解法。',
+                strengths: '學習力與聯想力極強，擅長企劃、系統分析與跨領域整合，為人善良且具備高度同理心。',
+                blindSpots: '思慮過度容易導致精神內耗、失眠或猶豫不決；點子很多但有時缺乏長期執行的耐力。',
+                careerTip: '適合策略顧問、產品經理（PM）、數據分析、研發設計或幕僚智庫。'
+            },
+            {
+                id: 'taiyang', name: '太陽', group: 'beidou', groupName: '北斗星系',
+                role: '熱情燃燒的推廣者',
+                tags: ['#博愛無私', '#光明磊落', '#感染力強'],
+                oneLiner: '像陽光一樣照亮周圍的人，天生的社群領袖與價值傳遞者。',
+                strengths: '熱情大方、樂於助人且具備極佳的公開表達能力，正義感十足，能凝聚團隊士氣。',
+                blindSpots: '容易過度燃燒自己照亮別人，忽略自身精力界線；有時過於直接坦率，無意中讓人感到壓力。',
+                careerTip: '適合品牌公關、教育講師、媒體傳播、公益組織或業務開發主管。'
+            },
+            {
+                id: 'wuqu', name: '武曲', group: 'beidou', groupName: '北斗星系',
+                role: '務實高效的執行長',
+                tags: ['#說到做到', '#財務敏銳', '#抗壓剛毅'],
+                oneLiner: '不愛空談只看結果的行動派，對數字、效率與目標達成有著極高標準。',
+                strengths: '執行力滿分、意志堅定、信守承諾，對商業運作與資產管理具備天然的敏銳度。',
+                blindSpots: '處事容易就事論事而顯得不夠圓融，情感表達較為內斂直接，給人「工作狂」或難以親近的印象。',
+                careerTip: '適合金融投資、財務長、營運管理、精密技術或績效導向的商業領域。'
+            },
+            {
+                id: 'tiantong', name: '天同', group: 'beidou', groupName: '北斗星系',
+                role: '溫柔療癒的協調者',
+                tags: ['#赤子之心', '#隨和好相處', '#重視體驗'],
+                oneLiner: '擁有赤子之心的生活美學家，擅長用溫柔化解衝突，追求內心的平靜與快樂。',
+                strengths: '親和力極佳、不愛與人計較，是團隊中最棒的潤滑劑；對生活品質、美食與藝術有敏銳品味。',
+                blindSpots: '面對高壓競爭容易產生逃避心態或拖延症，需要明確的外部目標與夥伴推一把才能發揮潛力。',
+                careerTip: '適合人資關係、客戶體驗（CX）、餐飲旅宿、心理諮商或文創生活產業。'
+            },
+            {
+                id: 'lianzhen', name: '廉貞', group: 'beidou', groupName: '北斗星系',
+                role: '精準控場的公關大師',
+                tags: ['#界線分明', '#審美敏銳', '#社交手腕'],
+                oneLiner: '兼具理性原則與感性魅力的矛盾綜合體，懂得在規則之中發揮最大影響力。',
+                strengths: '對制度、合規與細節有極高掌握度，同時具備獨特的審美眼光與社交魅力，危機處理能力強。',
+                blindSpots: '內心自我要求極高，容易在「遵守規範」與「追求自由」之間拉扯，情緒起伏較深。',
+                careerTip: '適合法務稽核、大型活動統籌、時尚設計、外交公關或高科技精密產業。'
+            },
+            {
+                id: 'tianfu', name: '天府', group: 'nandou', groupName: '南斗星系',
+                role: '穩健守成的資源庫長',
+                tags: ['#沉穩可靠', '#懂得享受', '#風險控管'],
+                oneLiner: '從容大度的掌櫃型人格，擅長將現有資源最大化，建立穩固的安全感堡壘。',
+                strengths: '心胸寬廣、處變不驚，擁有極佳的守成與資產配置能力，懂得在工作與生活享受之間取得平衡。',
+                blindSpots: '偏愛待在熟悉的舒適圈，面對全新未知的顛覆性變革時，決策步調會顯得較為保守謹慎。',
+                careerTip: '適合企業營運長（COO）、資產管理、不動產規劃、大型機構行政管理。'
+            },
+            {
+                id: 'taiyin', name: '太陰', group: 'nandou', groupName: '南斗星系',
+                role: '細膩溫潤的規劃師',
+                tags: ['#觀察入微', '#溫柔堅定', '#美學與理財'],
+                oneLiner: '如月光般靜謐而深邃的觀察者，用細膩的洞察力照顧身邊每一個人的需求。',
+                strengths: '共情能力極強、注重細節與秩序，擅長長期規劃與穩健儲蓄，具備優雅的人文與藝術氣息。',
+                blindSpots: '容易把情緒往心裡吞，對環境與他人評價較為敏感，有時會在小細節上糾結太久。',
+                careerTip: '適合室內設計、財務規劃、心理輔導、內容編輯、研究分析或教育領域。'
+            },
+            {
+                id: 'tanlang', name: '貪狼', group: 'nandou', groupName: '南斗星系',
+                role: '多才多藝的跨界玩家',
+                tags: ['#好奇心爆棚', '#社交達人', '#斜槓高手'],
+                oneLiner: '充滿生命力與好奇心的探索者，永遠在學習新事物，在哪裡都能成為焦點。',
+                strengths: '多才多藝、適應力極強，具備天生的商業嗅覺與人際魅力，擅長把興趣變成影響力。',
+                blindSpots: '興趣太廣泛容易導致「樣樣通、樣樣鬆」，面對枯燥重複的例行公事容易失去耐心。',
+                careerTip: '適合新媒體行銷、演藝娛樂、跨界商務開發（BD）、身心靈產業或自由接案者。'
+            },
+            {
+                id: 'jumen', name: '巨門', group: 'nandou', groupName: '南斗星系',
+                role: '深度思辨的專業職人',
+                tags: ['#追根究底', '#口才犀利', '#洞察真相'],
+                oneLiner: '不輕易盲從的批判性思考者，擅長透過語言、文字與深度研究揭開事物本質。',
+                strengths: '邏輯嚴密、觀察力銳利，能發現別人忽略的漏洞；一旦認定專業領域便會鑽研到極致。',
+                blindSpots: '說話直指核心容易讓人覺得挑剔或有距離感，內心較難完全信任他人，容易多疑。',
+                careerTip: '適合律師、調查記者、軟體工程師、專業講師、醫師或深度研究員。'
+            },
+            {
+                id: 'tianxiang', name: '天相', group: 'nandou', groupName: '南斗星系',
+                role: '優雅得體的金牌幕僚',
+                tags: ['#注重形象', '#公正客觀', '#協調專家'],
+                oneLiner: '天生的外交官與溝通橋樑，總能用得體、專業的姿態讓合作雙方達成共識。',
+                strengths: '重視儀表與禮節、處事公正不偏頗，具備極佳的服務精神與文書行政統籌力。',
+                blindSpots: '太在意他人眼光與和諧氣氛，有時會為了維持表面平衡而委屈自己，缺乏拍板定案的魄力。',
+                careerTip: '適合高階主管特助、公關發言人、人力資源、專案協調人或精品服務業。'
+            },
+            {
+                id: 'tianliang', name: '天梁', group: 'nandou', groupName: '南斗星系',
+                role: '溫暖可靠的團隊導師',
+                tags: ['#照顧他人', '#經驗傳承', '#逢凶化吉'],
+                oneLiner: '自帶「長輩與導師光環」的守護者，總在關鍵時刻伸出援手，為團隊指點迷津。',
+                strengths: '成熟穩重、樂於分享經驗與知識，具備極強的原則感與解決棘手難題的智慧。',
+                blindSpots: '容易忍不住「好為人師」或替別人操心太多，有時會顯得過於說教或一板一眼。',
+                careerTip: '適合企業培訓師、醫療照護、顧問諮詢、品質管理或非營利組織領導者。'
+            },
+            {
+                id: 'qisha', name: '七殺', group: 'nandou', groupName: '南斗星系',
+                role: '開疆闢土的先鋒戰將',
+                tags: ['#獨立果斷', '#越挫越勇', '#目標導向'],
+                oneLiner: '不畏艱難的孤膽英雄，越是充滿挑戰的荒地，越能激發你突破極限的鬥志。',
+                strengths: '魄力十足、決策明快、獨立性極強，不喜歡依賴他人，在危機與變革中展現驚人爆發力。',
+                blindSpots: '個性急躁、得失心較重，對自己與夥伴都極為嚴苛，容易忽略過程中的人情溫度。',
+                careerTip: '適合新創事業開拓、業務衝刺、危機重整、外科醫療或高強度競技領域。'
+            },
+            {
+                id: 'pojun', name: '破軍', group: 'nandou', groupName: '南斗星系',
+                role: '顛覆框架的創新先驅',
+                tags: ['#破舊立新', '#全心投入', '#不按牌理'],
+                oneLiner: '天生的改革家與創意破壞者，不滿足於現狀，總想把舊事物打掉重練成更好的樣子。',
+                strengths: '勇於嘗試無人走過的路，創意與執行魄力兼具，一旦投入熱愛的事物便會全力以赴。',
+                blindSpots: '人生與職涯變動幅度較大，容易在還沒收尾前就想開啟下一個新專案，財務與精力波動明顯。',
+                careerTip: '適合創新研發、產品轉型、藝術創作、建築設計或從 0 到 1 的創業專案。'
+            }
+        ];
+
+        // 十二宮位白話定義 (依逆時針順序：命、兄、夫、子、財、疾、遷、友、官、田、福、父)
+        const PALACE_DEFINITIONS = [
+            { key: 'ming', name: '命宮', subtitle: '你的核心人設與出廠設定', desc: '代表你最本質的性格底色、看世界的濾鏡，以及面對人生選擇時的第一直覺反應。它是整張命盤的總指揮中心。' },
+            { key: 'xiongdi', name: '兄弟宮', subtitle: '手足情誼與平輩合作圈', desc: '除了反映與兄弟姊妹的緣分，在現代職場中也代表你的「核心團隊夥伴」、私交好友以及現金流周轉能力。' },
+            { key: 'fuqi', name: '夫妻宮', subtitle: '親密關係與理想伴侶投射', desc: '展現你在愛情中的相處模式、內心渴望的伴侶特質，以及在親密關係裡需要學習的溝通課題。' },
+            { key: 'zinv', name: '子女宮', subtitle: '創造力、後輩緣與合夥能量', desc: '象徵你對待下一代、毛小孩或團隊新人的態度，同時也代表你的創造力結晶、才華展現與投資合夥運。' },
+            { key: 'caibo', name: '財帛宮', subtitle: '賺錢模式與金錢價值觀', desc: '揭示你適合透過什麼方式創造收入（專業技術、人脈整合或投資規劃），以及你花錢與理財的行為習慣。' },
+            { key: 'jie', name: '疾厄宮', subtitle: '身心健康警報與抗壓體質', desc: '提醒你身體較容易累積壓力的部位，以及當工作過勞時，身心會用什麼訊號提醒你該放慢腳步休息。' },
+            { key: 'qianyi', name: '遷移宮', subtitle: '外在形象與跨界發展舞台', desc: '代表你離開家鄉、進入陌生環境或職場社交場合時，別人對你的第一印象，以及外出發展的機遇。' },
+            { key: 'jiaoyou', name: '交友宮', subtitle: '廣大社交圈與客戶群眾緣', desc: '反映你與同事、客戶、粉絲或泛社交圈的互動品質，也能看出你在群體中容易吸引到什麼樣的朋友。' },
+            { key: 'guanlu', name: '官祿宮', subtitle: '職場天賦與工作成就舞台', desc: '代表你的工作態度、適合的職業類型與管理風格。看懂官祿宮，就能找到讓你發光發熱的職涯賽道。' },
+            { key: 'tianzhai', name: '田宅宮', subtitle: '居住環境、家庭氛圍與資產庫', desc: '象徵你對「家」的安全感需求、居家生活品質，以及長期累積不動產與實質財富的儲蓄庫存能力。' },
+            { key: 'fude', name: '福德宮', subtitle: '內在精神世界與快樂泉源', desc: '這是你的「靈魂後花園」，反映你獨處時的內心狀態、興趣嗜好、精神滿足感與自我療癒的方式。' },
+            { key: 'fumu', name: '父母宮', subtitle: '原生家庭影響與長輩主管緣', desc: '除了代表與父母的相處模式，在現代社會中也象徵你與師長、直屬主管之間的溝通默契與文書合約運。' }
+        ];
+
+        // 4x4 網格與地支對應座標 (row 0~3, col 0~3)
+        // 傳統紫微方盤：巳(0,0) 午(0,1) 未(0,2) 申(0,3) / 辰(1,0) 酉(1,3) / 卯(2,0) 戌(2,3) / 寅(3,0) 丑(3,1) 子(3,2) 亥(3,3)
+        const EARTHLY_BRANCHES = [
+            { idx: 0, name: '子', r: 3, c: 2 },
+            { idx: 1, name: '丑', r: 3, c: 1 },
+            { idx: 2, name: '寅', r: 3, c: 0 },
+            { idx: 3, name: '卯', r: 2, c: 0 },
+            { idx: 4, name: '辰', r: 1, c: 0 },
+            { idx: 5, name: '巳', r: 0, c: 0 },
+            { idx: 6, name: '午', r: 0, c: 1 },
+            { idx: 7, name: '未', r: 0, c: 2 },
+            { idx: 8, name: '申', r: 0, c: 3 },
+            { idx: 9, name: '酉', r: 1, c: 3 },
+            { idx: 10, name: '戌', r: 2, c: 3 },
+            { idx: 11, name: '亥', r: 3, c: 3 }
+        ];
+
+        // 學習地圖詳細資料
+        const ROADMAP_DETAILS = [
+            {
+                step: 'STEP 01｜認識地盤：十二宮位',
+                title: '人生是一座有 12 個房間的房子',
+                summary: '紫微斗數把人的一生拆解成 12 個彼此關聯的生活面向。每個人的 12 宮位順序都固定（逆時針排列），但因為出生時辰不同，這 12 個房間會落在不同的地支位置上。',
+                highlights: [
+                    { label: '我執核心', text: '命宮（本質）、福德宮（精神）、疾厄宮（身體）' },
+                    { label: '事業財富', text: '官祿宮（工作）、財帛宮（賺錢）、田宅宮（存款）' },
+                    { label: '人際關係', text: '夫妻宮（伴侶）、父母宮（長輩）、交友宮（同儕）' }
+                ]
+            },
+            {
+                step: 'STEP 02｜認識主角：十四主星',
+                title: '沒有好星與壞星，只有不同的天賦劇本',
+                summary: '十四顆主星分成「北斗星系（偏重開創與執行）」與「南斗星系（偏重規劃與人際）」。如果某個宮位沒有主星，稱為「空宮」，代表該領域可塑性高，會直接借用對面宮位的星曜能量。',
+                highlights: [
+                    { label: '開創領導型', text: '紫微、天府、武曲、天相（穩健掌舵、重視架構）' },
+                    { label: '支援智庫型', text: '天機、太陰、天同、天梁（細膩思考、溫和協調）' },
+                    { label: '行動突破型', text: '七殺、破軍、廉貞、貪狼、太陽、巨門（熱情開拓、勇於變革）' }
+                ]
+            },
+            {
+                step: 'STEP 03｜看懂互動：三方四正與借星安宮',
+                title: '看懂「支援系統」，才不會以偏概全',
+                summary: '在紫微斗數中，任何一個宮位（本宮）都會受到「對宮（正對面）」以及「三合宮（左右各隔三格）」的直接影響，這四個宮位合稱「三方四正」。',
+                highlights: [
+                    { label: '黃金鐵三角', text: '「命宮＋財帛宮＋官祿宮」加上對面的「遷移宮」，共同決定了一個人的事業與財富格局。' },
+                    { label: '空宮不代表沒有', text: '遇到沒有主星的宮位時，直接把「對宮」的主星借過來參考，代表你在此領域容易受外在環境與伴侶影響。' }
+                ]
+            },
+            {
+                step: 'STEP 04｜掌握時間：四化與大限流年',
+                title: '像看天氣預報一樣規劃人生節奏',
+                summary: '如果主星是演員，那麼「化祿、化權、化科、化忌」就是導演給演員的情緒指令；而大限（每十年一運）與流年（每年一運）則告訴你現在正處於人生的哪個季節。',
+                highlights: [
+                    { label: '祿・權・科・忌', text: '化祿是機會與人緣、化權是責任與掌控、化科是貴人與名聲、化忌則是內心最在意、需要花時間修煉的功課。' },
+                    { label: '順勢而為', text: '運勢好時積極拓展版圖；遇到化忌或煞星聚集的年份，則適合進修充電、保守理財與照顧身心。' }
+                ]
+            }
+        ];
+
+        // 情境式生活專欄資料
+        const LIFE_COLUMNS = [
+            {
+                tag: '職場天賦｜官祿宮',
+                title: '總覺得在公司格格不入？從「官祿宮」找回你的天賦賽道',
+                readTime: '3 分鐘閱讀',
+                excerpt: '有些人天生適合在大企業按部就班晉升，有些人卻必須在變動的新創環境才能發揮潛力。透過官祿宮主星，看懂你的理想工作模式。',
+                content: `
+                    <p class="mb-4">許多人在職涯感到迷惘，往往不是因為能力不足，而是「把天生的開創型人才放進了高度重複的行政流程裡」，或是「讓擅長深度規劃的軍師去扛高壓陌生開發」。</p>
+                    <h4 class="font-serif-title font-bold text-indigoMain text-lg mb-2">1. 官祿宮有「開創行動星」（七殺、破軍、貪狼、廉貞）</h4>
+                    <p class="mb-4">你渴望舞台、重視結果與自主權。一成不變的打卡生活會迅速消耗你的熱情。建議選擇專案制、業務拓展、產品從 0 到 1 孵化或新創團隊，讓你能直接看見努力帶來的成果。</p>
+                    <h4 class="font-serif-title font-bold text-indigoMain text-lg mb-2">2. 官祿宮有「穩健統籌星」（紫微、天府、武曲、天相）</h4>
+                    <p class="mb-4">你重視制度、信譽與長期累積。適合規模成熟、分工明確的組織，從專業幕僚逐步晉升至管理層，你的沉穩與風險控管能力會讓你成為老闆最信任的核心大將。</p>
+                    <h4 class="font-serif-title font-bold text-indigoMain text-lg mb-2">3. 官祿宮有「思考支援星」（天機、太陰、天同、天梁、巨門、太陽）</h4>
+                    <p>你的優勢在於洞察力、溝通協調與專業知識。顧問諮詢、教育培訓、內容創作、設計研發或人資溝通，都是能讓你發光發熱的最佳位置。</p>
+                `
+            },
+            {
+                tag: '感情關係｜夫妻宮',
+                title: '為什麼總愛上同一種人？解碼「夫妻宮」的親密關係投射',
+                readTime: '4 分鐘閱讀',
+                excerpt: '夫妻宮看的不只是「未來伴侶長什麼樣子」，更是你內心深處對親密關係的期待、安全感需求，以及相處時的互動盲點。',
+                content: `
+                    <p class="mb-4">在現代關係心理學中，我們選擇伴侶的方式往往反映了自己的內在需求。紫微斗數的「夫妻宮」，正是這面心理鏡子的具體呈現。</p>
+                    <h4 class="font-serif-title font-bold text-indigoMain text-lg mb-2">1. 夫妻宮強勢星曜（紫微、武曲、七殺、破軍）</h4>
+                    <p class="mb-4">你容易被有能力、有主見、甚至帶點酷勁的對象吸引。但兩個強者在一起，最需要練習的是「把職場的講道理留在門外」，在關係裡適度示弱與傾聽，才能避免硬碰硬的爭執。</p>
+                    <h4 class="font-serif-title font-bold text-indigoMain text-lg mb-2">2. 夫妻宮溫和星曜（天同、太陰、天機、天相）</h4>
+                    <p class="mb-4">你渴望細水長流、情緒價值與心靈默契。需要注意的是，有時為了維持表面和諧，你可能會把委屈吞進肚子裡，建議練習溫和而堅定地表達真實需求。</p>
+                    <h4 class="font-serif-title font-bold text-indigoMain text-lg mb-2">3. 夫妻宮是空宮怎麼辦？</h4>
+                    <p>空宮代表你的感情觀沒有預設框架，可塑性極高！只要借看對面「官祿宮」的主星，就能知道你容易在工作或專業學習場合遇見心儀對象。</p>
+                `
+            },
+            {
+                tag: '財富思維｜財帛宮',
+                title: '存不了錢還是不敢投資？從「財帛宮」建立你的理財節奏',
+                readTime: '3 分鐘閱讀',
+                excerpt: '財帛宮代表你的「現金流創造方式」，田宅宮則是你的「資產保險箱」。兩個宮位一起看，找出最適合你的財富累積策略。',
+                content: `
+                    <p class="mb-4">每個人與金錢的關係都不同：有人靠專業技術穩健累積，有人靠人脈資源整合獲利，也有人一有錢就想投資新項目。</p>
+                    <h4 class="font-serif-title font-bold text-indigoMain text-lg mb-2">1. 財帛宮見「化祿」或「祿存」</h4>
+                    <p class="mb-4">代表你在賺錢管道上較容易遇到貴人或順風車，對商業機會敏感。但「賺得多」不等於「留得住」，仍需搭配定期定額或不動產配置（看田宅宮）來鎖住獲利。</p>
+                    <h4 class="font-serif-title font-bold text-indigoMain text-lg mb-2">2. 財帛宮見「武曲、天府、太陰」</h4>
+                    <p class="mb-4">你擁有天生的財務紀律與風險意識，適合透過複利投資、ETF 或長期資產配置慢慢變富，切忌跟風短線投機。</p>
+                    <h4 class="font-serif-title font-bold text-indigoMain text-lg mb-2">3. 財帛宮見「化忌」</h4>
+                    <p>化忌在財帛宮並不代表窮困，而是代表你「對金錢特別有危機感，願意為了賺錢比別人更拼命」，只要避免高槓桿借貸與衝動型消費，反而能憑藉專業實力累積可觀身家。</p>
+                `
+            }
+        ];
+
+        // 新手破冰 Q&A
+        const FAQ_LIST = [
+            {
+                q: '命盤裡看到「化忌」或「六煞星（擎羊、陀羅、火星、鈴星等）」，是不是代表運氣很差？',
+                a: '完全不是！在現代知性紫微的觀點裡，主星是「方向盤」，煞星與化忌則是「渦輪增壓器」與「人生必修課」。許多白手起家的創業者與頂尖專業人士，命盤中都有煞星激發他們的突破魄力；而「化忌」所在的位置，只是提醒你這輩子會特別在乎該領域，只要多花一份耐心與覺察，它反而會成為你最專精的成就所在。'
+            },
+            {
+                q: '如果我的「命宮」或「夫妻宮」沒有任何一顆十四主星（稱為空宮），該怎麼辦？',
+                a: '大約每十二個人中就有一到兩人的命宮是「空宮」，這是非常正常的現象！空宮代表你的性格像一塊純淨的畫布，擁有極高的環境適應力與可塑性，不容易固執己見。在解盤時，我們會使用「借星安宮」的法則——直接參考正對面宮位（對宮）的主星，那就是你展現出來的外在特質。'
+            },
+            {
+                q: '同卵雙胞胎的出生時間幾乎一模一樣，為什麼長大後的人生際遇會不同？',
+                a: '紫微斗數呈現的是「先天性格傾向與環境氣象（劇本底稿）」，但每個人後天的「自由意志、家庭教育、伴侶選擇與自我覺察」才是真正的導演。就像兩個人拿到同一副牌，有人選擇保守穩健打法，有人選擇積極進攻，不同的選擇就會創造出截然不同的人生風景。'
+            },
+            {
+                q: '學會看紫微斗數之後，對我的日常生活有什麼實際幫助？',
+                a: '最大的幫助是「自我接納」與「換位思考」。當你明白自己天機星特質容易想太多，你就不會再苛責自己不夠果斷，而是學會用筆記本把思緒寫下來；當你發現伴侶是武曲星、講話直接不浪漫，你就能理解那不是不愛你，而是他表達關心的務實方式。看懂星圖，能讓你與自己、與他人都相處得更溫柔。'
+            }
+        ];
+
+        // ==========================================
+        // 2. 狀態管理與正統紫微斗數安星演算法
+        //    (嚴格依循：真農曆轉換、五虎遁、五行局、紫微天府安星、十干四化、六吉六煞、大限)
+        // ==========================================
+        let appState = {
+            userName: '星圖探索者',
+            gender: 'female',
+            calendar: 'solar',
+            birthDate: '1995-08-18',
+            isLeapMonth: false,
+            birthHour24: 8,        // 0~23 小時
+            chartMode: 'beginner', // 'beginner' | 'advanced'
+            mobileView: 'cards',   // 'cards' | 'grid'
+            selectedBranchIdx: 0,  // 當前選中的地支索引 (0:子 ~ 11:亥)
+            metaInfo: {},          // 農曆年月日、干支、五行局、身宮等中宮資訊
+            palaces: []            // 計算後的 12 宮位資料陣列 (依地支 0~11 排序)
+        };
+
+        const HEAVENLY_STEMS = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+        const BRANCH_NAMES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+
+        // 生年天干四化對照表：[化祿, 化權, 化科, 化忌]
+        const SIHUA_TABLE = {
+            '甲': ['廉貞', '破軍', '武曲', '太陽'],
+            '乙': ['天機', '天梁', '紫微', '太陰'],
+            '丙': ['天同', '天機', '文昌', '廉貞'],
+            '丁': ['太陰', '天同', '天機', '巨門'],
+            '戊': ['貪狼', '太陰', '右弼', '天機'],
+            '己': ['武曲', '貪狼', '天梁', '文曲'],
+            '庚': ['太陽', '武曲', '太陰', '天同'],
+            '辛': ['巨門', '太陽', '文曲', '文昌'],
+            '壬': ['天梁', '紫微', '左輔', '武曲'],
+            '癸': ['破軍', '巨門', '太陰', '貪狼']
+        };
+
+        // 六十甲子納音五行局數對照表 (2:水二局, 3:木三局, 4:金四局, 5:土五局, 6:火六局)
+        const NAYIN_JU_MAP = {
+            '甲子': 4, '乙丑': 4, '丙寅': 6, '丁卯': 6, '戊辰': 3, '己巳': 3,
+            '庚午': 5, '辛未': 5, '壬申': 4, '癸酉': 4, '甲戌': 6, '乙亥': 6,
+            '丙子': 2, '丁丑': 2, '戊寅': 5, '己卯': 5, '庚辰': 4, '辛巳': 4,
+            '壬午': 3, '癸未': 3, '甲申': 2, '乙酉': 2, '丙戌': 5, '丁亥': 5,
+            '戊子': 6, '己丑': 6, '庚寅': 3, '辛卯': 3, '壬辰': 2, '癸巳': 2,
+            '甲午': 4, '乙未': 4, '丙申': 6, '丁酉': 6, '戊戌': 3, '己亥': 3,
+            '庚子': 5, '辛丑': 5, '壬寅': 4, '癸卯': 4, '甲辰': 6, '乙巳': 6,
+            '丙午': 2, '丁未': 2, '戊申': 5, '己酉': 5, '庚戌': 4, '辛亥': 4,
+            '壬子': 3, '癸丑': 3, '甲寅': 2, '乙卯': 2, '丙辰': 5, '丁巳': 5,
+            '戊午': 6, '己未': 6, '庚申': 3, '辛酉': 3, '壬戌': 2, '癸亥': 2
+        };
+
+        const JU_NAME_MAP = { 2: '水二局', 3: '木三局', 4: '金四局', 5: '土五局', 6: '火六局' };
+
+        const SIHUA_META = [
+            { label: '化祿', short: '祿', class: 'sihua-lu', desc: '能量順遂、資源與人緣匯聚於此' },
+            { label: '化權', short: '權', class: 'sihua-quan', desc: '企圖心強、渴望掌控與主導局面' },
+            { label: '化科', short: '科', class: 'sihua-ke', desc: '貴人提攜、理性規劃與良好聲譽' },
+            { label: '化忌', short: '忌', class: 'sihua-ji', desc: '內心最在意執著的課題，需多花心力修煉' }
+        ];
+
+        /**
+         * 正統紫微斗數排盤計算核心
+         */
+        function generateChartData() {
+            const [inYear, inMonth, inDay] = appState.birthDate.split('-').map(Number);
+            const hour24 = Number(appState.birthHour24);
+            // 23:00-23:59 為夜子時，時支為子(0)，但日數需算隔日；00:00-00:59 為早子時，時支為子(0)，日數為當日
+            const isNightZi = (hour24 === 23);
+            const hourBranchIdx = isNightZi ? 0 : Math.floor((hour24 + 1) / 2) % 12;
+
+            let lunarObj;
+            let solarDateStr = '';
+
+            if (appState.calendar === 'solar') {
+                // 若為夜子時，國曆日期加一天再轉農曆（符合傳統紫微夜子換日規範）
+                const baseDate = new Date(inYear, inMonth - 1, inDay + (isNightZi ? 1 : 0));
+                const solar = Solar.fromYmd(baseDate.getFullYear(), baseDate.getMonth() + 1, baseDate.getDate());
+                lunarObj = solar.getLunar();
+                solarDateStr = `${inYear}-${String(inMonth).padStart(2, '0')}-${String(inDay).padStart(2, '0')}`;
+            } else {
+                // 使用者直接輸入農曆
+                const monthVal = appState.isLeapMonth ? -Math.abs(inMonth) : Math.abs(inMonth);
+                let baseLunar = Lunar.fromYmd(inYear, monthVal, inDay);
+                if (isNightZi) {
+                    const nextSolar = baseLunar.getSolar().next(1);
+                    baseLunar = nextSolar.getLunar();
+                }
+                lunarObj = baseLunar;
+                const s = lunarObj.getSolar();
+                solarDateStr = `${s.getYear()}-${String(s.getMonth()).padStart(2, '0')}-${String(s.getDay()).padStart(2, '0')}`;
+            }
+
+            // 取得精準農曆年干支、農曆月、農曆日
+            const yearGan = lunarObj.getYearGan();
+            const yearZhi = lunarObj.getYearZhi();
+            const yearGanIdx = HEAVENLY_STEMS.indexOf(yearGan);
+            const yearZhiIdx = BRANCH_NAMES.indexOf(yearZhi);
+
+            const rawLunarMonth = lunarObj.getMonth(); // 負數代表閏月
+            const lunarDay = lunarObj.getDay();
+            let effectiveMonth = Math.abs(rawLunarMonth);
+            if (rawLunarMonth < 0 && lunarDay > 15) {
+                effectiveMonth = (effectiveMonth % 12) + 1;
+            }
+
+            // 1. 安命宮與身宮（寅起正月，順數生月，逆數生時為命宮；順數生時為身宮）
+            const mingBranchIdx = (2 + (effectiveMonth - 1) - hourBranchIdx + 24) % 12;
+            const shenBranchIdx = (2 + (effectiveMonth - 1) + hourBranchIdx + 24) % 12;
+
+            // 2. 五虎遁起十二宮天干
+            const yinStemStart = ((yearGanIdx % 5) * 2 + 2) % 10; // 寅宮(idx=2)的天干索引
+
+            // 初始化 12 地支宮位
+            const branchMap = EARTHLY_BRANCHES.map((b, idx) => {
+                // 命宮逆時針排十二宮：命、兄、夫、子、財、疾、遷、友、官、田、福、父
+                const palaceOrder = (mingBranchIdx - idx + 12) % 12;
+                const palaceDef = PALACE_DEFINITIONS[palaceOrder];
+                const offsetFromYin = (idx - 2 + 12) % 12;
+                const stemIdx = (yinStemStart + offsetFromYin) % 10;
+
+                return {
+                    branchIdx: idx,
+                    branchName: b.name,
+                    stemName: HEAVENLY_STEMS[stemIdx],
+                    row: b.r,
+                    col: b.c,
+                    palaceOrder: palaceOrder,
+                    palaceKey: palaceDef.key,
+                    palaceName: palaceDef.name,
+                    palaceSubtitle: palaceDef.subtitle,
+                    palaceDesc: palaceDef.desc,
+                    isShenPalace: idx === shenBranchIdx,
+                    daxianRange: '',
+                    majorStars: [],
+                    luckyStars: [],
+                    toughStars: [],
+                    sihuaList: [],
+                    isEmptyPalace: false,
+                    borrowedFromIdx: null
+                };
+            });
+
+            // 3. 定五行局（依命宮干支納音）
+            const mingGanZhi = branchMap[mingBranchIdx].stemName + branchMap[mingBranchIdx].branchName;
+            const juNum = NAYIN_JU_MAP[mingGanZhi] || 4;
+            const juName = JU_NAME_MAP[juNum];
+
+            // 計算大限起運歲數與順逆（陽男陰女順行，陰男陽女逆行）
+            const isYangYear = (yearGanIdx % 2 === 0);
+            const isMale = (appState.gender === 'male');
+            const isClockwise = (isYangYear && isMale) || (!isYangYear && !isMale);
+
+            for (let i = 0; i < 12; i++) {
+                const targetIdx = isClockwise
+                    ? (mingBranchIdx + i) % 12
+                    : (mingBranchIdx - i + 12) % 12;
+                const startAge = juNum + i * 10;
+                const endAge = startAge + 9;
+                branchMap[targetIdx].daxianRange = `${startAge}-${endAge}`;
+            }
+
+            // 4. 定紫微星位置（正統算法：農曆生日除以局數，商數與餘數推算）
+            const ziweiPos = calcZiweiPosition(lunarDay, juNum);
+            // 天府星與紫微星在寅申線上對稱
+            const tianfuPos = (4 - ziweiPos + 12) % 12;
+
+            // 安紫微星系（逆行：紫微、天機、隔一太陽、武曲、天同、隔二廉貞）
+            const ziweiSeries = [
+                { id: 'ziwei', offset: 0 },
+                { id: 'tianji', offset: -1 },
+                { id: 'taiyang', offset: -3 },
+                { id: 'wuqu', offset: -4 },
+                { id: 'tiantong', offset: -5 },
+                { id: 'lianzhen', offset: -8 }
+            ];
+            ziweiSeries.forEach(item => {
+                const pos = (ziweiPos + item.offset + 12) % 12;
+                branchMap[pos].majorStars.push(FOURTEEN_STARS.find(s => s.id === item.id));
+            });
+
+            // 安天府星系（順行：天府、太陰、貪狼、巨門、天相、天梁、七殺、隔三破軍）
+            const tianfuSeries = [
+                { id: 'tianfu', offset: 0 },
+                { id: 'taiyin', offset: 1 },
+                { id: 'tanlang', offset: 2 },
+                { id: 'jumen', offset: 3 },
+                { id: 'tianxiang', offset: 4 },
+                { id: 'tianliang', offset: 5 },
+                { id: 'qisha', offset: 6 },
+                { id: 'pojun', offset: 10 }
+            ];
+            tianfuSeries.forEach(item => {
+                const pos = (tianfuPos + item.offset + 12) % 12;
+                branchMap[pos].majorStars.push(FOURTEEN_STARS.find(s => s.id === item.id));
+            });
+
+            // 5. 安六吉星（正統公式）
+            // 文昌：戌上起子時逆數；文曲：辰上起子時順數
+            const wenchangPos = (10 - hourBranchIdx + 12) % 12;
+            const wenquPos = (4 + hourBranchIdx) % 12;
+            branchMap[wenchangPos].luckyStars.push('文昌');
+            branchMap[wenquPos].luckyStars.push('文曲');
+
+            // 左輔：辰上起正月順數；右弼：戌上起正月逆數
+            const zuofuPos = (4 + (effectiveMonth - 1)) % 12;
+            const youbiPos = (10 - (effectiveMonth - 1) + 12) % 12;
+            branchMap[zuofuPos].luckyStars.push('左輔');
+            branchMap[youbiPos].luckyStars.push('右弼');
+
+            // 天魁、天鉞（依生年天干）
+            const kuiYueMap = {
+                '甲': [1, 7], '戊': [1, 7], '庚': [1, 7], // 丑未
+                '乙': [0, 8], '己': [0, 8],             // 子申
+                '丙': [11, 9], '丁': [11, 9],           // 亥酉
+                '壬': [3, 5], '癸': [3, 5],             // 卯巳
+                '辛': [6, 2]                            // 午寅
+            };
+            const [kuiPos, yuePos] = kuiYueMap[yearGan];
+            branchMap[kuiPos].luckyStars.push('天魁');
+            branchMap[yuePos].luckyStars.push('天鉞');
+
+            // 6. 安六煞星（正統公式）
+            // 祿存與擎羊（祿前一位）、陀羅（祿後一位）
+            const lucunMap = { '甲': 2, '乙': 3, '丙': 5, '戊': 5, '丁': 6, '己': 6, '庚': 8, '辛': 9, '壬': 11, '癸': 0 };
+            const lucunPos = lucunMap[yearGan];
+            branchMap[lucunPos].luckyStars.push('祿存');
+            branchMap[(lucunPos + 1) % 12].toughStars.push('擎羊');
+            branchMap[(lucunPos - 1 + 12) % 12].toughStars.push('陀羅');
+
+            // 火星、鈴星（依年支三合起點順數生時）
+            let huoStart = 2, lingStart = 10;
+            if ([2, 6, 10].includes(yearZhiIdx)) { huoStart = 1; lingStart = 3; }       // 寅午戌
+            else if ([8, 0, 4].includes(yearZhiIdx)) { huoStart = 2; lingStart = 10; } // 申子辰
+            else if ([5, 9, 1].includes(yearZhiIdx)) { huoStart = 3; lingStart = 10; } // 巳酉丑
+            else { huoStart = 9; lingStart = 10; }                                     // 亥卯未
+            branchMap[(huoStart + hourBranchIdx) % 12].toughStars.push('火星');
+            branchMap[(lingStart + hourBranchIdx) % 12].toughStars.push('鈴星');
+
+            // 地空（亥上起子時逆數）、地劫（亥上起子時順數）
+            branchMap[(11 - hourBranchIdx + 12) % 12].toughStars.push('地空');
+            branchMap[(11 + hourBranchIdx) % 12].toughStars.push('地劫');
+
+            // 7. 安生年四化（祿、權、科、忌）
+            const sihuaStars = SIHUA_TABLE[yearGan];
+            sihuaStars.forEach((targetStarName, idx) => {
+                const meta = SIHUA_META[idx];
+                branchMap.forEach(cell => {
+                    const hasMajor = cell.majorStars.some(s => s.name === targetStarName);
+                    const hasMinor = cell.luckyStars.includes(targetStarName);
+                    if (hasMajor || hasMinor) {
+                        cell.sihuaList.push({ ...meta, starName: targetStarName });
+                    }
+                });
+            });
+
+            // 8. 標記空宮並指向對宮
+            branchMap.forEach((cell, idx) => {
+                if (cell.majorStars.length === 0) {
+                    cell.isEmptyPalace = true;
+                    cell.borrowedFromIdx = (idx + 6) % 12;
+                }
+            });
+
+            const shenPalaceName = branchMap[shenBranchIdx].palaceName;
+            const lunarDisplayStr = `農曆 ${yearGan}${yearZhi}年 ${rawLunarMonth < 0 ? '閏' : ''}${lunarObj.getMonthInChinese()}月${lunarObj.getDayInChinese()} ${BRANCH_NAMES[hourBranchIdx]}時`;
+
+            appState.metaInfo = {
+                solarDateStr,
+                lunarDisplayStr,
+                juName,
+                shenPalaceName,
+                genderText: (isYangYear ? '陽' : '陰') + (isMale ? '男' : '女'),
+                yearGan
+            };
+
+            appState.palaces = branchMap;
+            appState.selectedBranchIdx = mingBranchIdx;
+        }
+
+        /**
+         * 正統紫微星安星演算法（依據農曆日與五行局數）
+         */
+        function calcZiweiPosition(lunarDay, ju) {
+            let quotient = Math.floor(lunarDay / ju);
+            let remainder = lunarDay % ju;
+            if (remainder === 0) {
+                // 整除：由寅(2)起順數商數步 (商數為1在寅)
+                return (2 + quotient - 1) % 12;
+            } else {
+                // 不能整除：補數 X = ju - remainder，商數加 1 為 basePos
+                const complement = ju - remainder;
+                const basePos = (2 + quotient) % 12;
+                if (complement % 2 === 1) {
+                    // 補數為奇數：由 basePos 逆退 complement 步
+                    return (basePos - complement + 24) % 12;
+                } else {
+                    // 補數為偶數：由 basePos 順進 complement 步
+                    return (basePos + complement) % 12;
+                }
+            }
+        }
+
+        // 取得三方四正關聯地支索引
+        function getSanFangSiZheng(branchIdx) {
+            const opposite = (branchIdx + 6) % 12; // 對宮
+            const tri1 = (branchIdx + 4) % 12;     // 三合之一
+            const tri2 = (branchIdx + 8) % 12;     // 三合之二
+            return { self: branchIdx, opposite, tri1, tri2 };
+        }
+
+        // ==========================================
+        // 3. 渲染互動命盤 (桌機 4x4 & 手機卡片流)
+        // ==========================================
+        function renderChart() {
+            const related = getSanFangSiZheng(appState.selectedBranchIdx);
+            const relatedSet = new Set([related.opposite, related.tri1, related.tri2]);
+
+            // 1. 渲染 4x4 經典方格圖
+            const gridEl = document.getElementById('ziwei-4x4-grid');
+            gridEl.innerHTML = '';
+
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    // 中央 4 格處理
+                    if (r === 1 && c === 1) {
+                        const centerBox = document.createElement('div');
+                        centerBox.className = 'col-span-2 row-span-2 bg-white rounded-[10px] p-4 sm:p-5 border border-indigoMain/10 flex flex-col justify-between shadow-xs';
+                        const mingPalace = appState.palaces.find(p => p.palaceKey === 'ming');
+                        const mingStarsText = mingPalace.isEmptyPalace
+                            ? `空宮（借對宮：${appState.palaces[mingPalace.borrowedFromIdx].majorStars.map(s => s.name).join('、')}）`
+                            : mingPalace.majorStars.map(s => s.name).join('、');
+
+                        centerBox.innerHTML = `
+                            <div>
+                                <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-serif-title font-bold text-indigoMain text-base sm:text-lg">${escapeHtml(appState.userName)}</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-amberGold/15 text-[#B06000] text-[11px] font-bold">${appState.metaInfo.juName}</span>
+                                    </div>
+                                    <span class="px-2.5 py-0.5 rounded-full bg-indigoMain text-amberGold text-xs font-medium">${appState.metaInfo.genderText}</span>
+                                </div>
+                                <div class="mt-2.5 space-y-1 text-xs text-inkMuted">
+                                    <p><strong class="text-inkDark">國曆：</strong>${appState.metaInfo.solarDateStr}</p>
+                                    <p><strong class="text-inkDark">農曆：</strong>${appState.metaInfo.lunarDisplayStr}</p>
+                                    <p><strong class="text-inkDark">命宮主星：</strong><span class="text-starMajor font-bold">${mingStarsText}</span></p>
+                                    <p><strong class="text-inkDark">身宮所在：</strong><span class="text-indigoMain font-medium">${appState.metaInfo.shenPalaceName}</span></p>
+                                </div>
+                            </div>
+                            <div class="mt-2.5 p-2.5 rounded-lg bg-paper border border-amberGold/30 text-[11px] text-inkDark leading-relaxed">
+                                <span class="font-bold text-indigoMain">💡 三方四正連動：</span>點擊周圍宮位，金色框為「本宮」，深藍框為支援宮位；右下角數字為該宮「大限歲數」。
+                            </div>
+                        `;
+                        gridEl.appendChild(centerBox);
+                        continue;
+                    }
+                    // 跳過已被中央 2x2 合併的三格
+                    if ((r === 1 && c === 2) || (r === 2 && c === 1) || (r === 2 && c === 2)) {
+                        continue;
+                    }
+
+                    const cellData = appState.palaces.find(p => p.row === r && p.col === c);
+                    const isSelected = cellData.branchIdx === appState.selectedBranchIdx;
+                    const isRelated = relatedSet.has(cellData.branchIdx);
+
+                    const cellEl = document.createElement('div');
+                    cellEl.className = `palace-cell bg-white rounded-[10px] p-2 sm:p-3 border border-indigoMain/10 min-h-[125px] sm:min-h-[148px] flex flex-col justify-between cursor-pointer select-none ${isSelected ? 'palace-selected' : isRelated ? 'palace-sanfang' : 'hover:border-amberGold/50'}`;
+
+                    // 主星標籤 HTML
+                    let majorHtml = '';
+                    if (cellData.isEmptyPalace) {
+                        const borrowedPalace = appState.palaces[cellData.borrowedFromIdx];
+                        const borrowedNames = borrowedPalace.majorStars.map(s => s.name).join('、');
+                        majorHtml = `<span class="inline-block px-2 py-0.5 rounded-full bg-gray-100 text-inkMuted text-[11px] font-medium">空宮(借${borrowedNames})</span>`;
+                    } else {
+                        majorHtml = cellData.majorStars.map(s =>
+                            `<span class="inline-block px-2 py-0.5 rounded-full bg-starMajor text-white text-xs font-serif-title font-bold tracking-wide">${s.name}</span>`
+                        ).join(' ');
+                    }
+
+                    // 四化標籤 HTML (支援同宮雙四化)
+                    const sihuaHtml = cellData.sihuaList.map(sh =>
+                        `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${sh.class}">${sh.starName}${sh.label}</span>`
+                    ).join(' ');
+
+                    // 進階模式：六吉星與六煞星
+                    let minorHtml = '';
+                    if (appState.chartMode === 'advanced') {
+                        const luckyTags = cellData.luckyStars.map(s => `<span class="text-[11px] font-medium text-starLucky">${s}</span>`).join(' ');
+                        const toughTags = cellData.toughStars.map(s => `<span class="text-[11px] font-medium text-starTough">${s}</span>`).join(' ');
+                        minorHtml = `<div class="mt-1.5 flex flex-wrap gap-x-1.5 gap-y-0.5 leading-tight">${luckyTags} ${toughTags}</div>`;
+                    }
+
+                    // 三方四正與身宮角標提示
+                    let relationBadge = '';
+                    if (isSelected) {
+                        relationBadge = `<span class="text-[10px] font-bold text-amberGold">● 本宮</span>`;
+                    } else if (cellData.branchIdx === related.opposite) {
+                        relationBadge = `<span class="text-[10px] font-medium text-indigoMain/70">對宮</span>`;
+                    } else if (isRelated) {
+                        relationBadge = `<span class="text-[10px] font-medium text-indigoMain/70">三合</span>`;
+                    }
+                    const shenTag = cellData.isShenPalace ? `<span class="ml-1 px-1 py-0.2 rounded bg-amberGold/20 text-[#B06000] text-[9px] font-bold">身宮</span>` : '';
+
+                    cellEl.innerHTML = `
+                        <div>
+                            <div class="flex flex-wrap items-center gap-1">
+                                ${majorHtml}
+                                ${sihuaHtml}
+                            </div>
+                            ${minorHtml}
+                        </div>
+                        <div class="mt-2 pt-1.5 border-t border-gray-100 flex items-end justify-between">
+                            <div>
+                                ${relationBadge}
+                                <div class="flex items-center">
+                                    <span class="font-serif-title font-bold text-xs sm:text-sm ${cellData.palaceKey === 'ming' ? 'text-amberGold bg-indigoMain px-2 py-0.5 rounded-md' : 'text-indigoMain'}">
+                                        ${cellData.palaceName}
+                                    </span>
+                                    ${shenTag}
+                                </div>
+                            </div>
+                            <div class="text-right leading-none">
+                                <span class="block text-[10px] text-inkMuted mb-0.5">${cellData.daxianRange}歲</span>
+                                <span class="text-[11px] font-mono font-bold text-indigoMain/80">${cellData.stemName}${cellData.branchName}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    cellEl.addEventListener('click', () => handleSelectPalace(cellData.branchIdx, false));
+                    gridEl.appendChild(cellEl);
+                }
+            }
+
+            // 2. 渲染手機版專屬卡片流 (<768px)
+            renderMobileCards(relatedSet);
+
+            // 3. 渲染白話角色解析內容 (同步更新桌機右側面板與手機底部抽屜)
+            renderInspectorPanel();
+        }
+
+        function renderMobileCards(relatedSet) {
+            const bannerEl = document.getElementById('mobile-user-banner');
+            const cardsContainer = document.getElementById('mobile-palace-cards');
+
+            bannerEl.innerHTML = `
+                <div>
+                    <div class="text-xs text-amberGold font-medium">${appState.metaInfo.juName}．身宮在${appState.metaInfo.shenPalaceName}</div>
+                    <div class="font-serif-title font-bold text-base mt-0.5">${escapeHtml(appState.userName)}（${appState.metaInfo.genderText}）</div>
+                </div>
+                <div class="text-right text-xs text-white/80">
+                    <div>${appState.metaInfo.lunarDisplayStr.replace('農曆 ', '')}</div>
+                    <div>點擊卡片看白話解析</div>
+                </div>
+            `;
+
+            cardsContainer.innerHTML = '';
+            // 依照十二宮位順序（命宮、兄弟、夫妻...）排列，更符合手機閱讀直覺
+            const orderedPalaces = [...appState.palaces].sort((a, b) => a.palaceOrder - b.palaceOrder);
+
+            orderedPalaces.forEach(p => {
+                const isSelected = p.branchIdx === appState.selectedBranchIdx;
+                const isRelated = relatedSet.has(p.branchIdx);
+
+                let starsDisplay = '';
+                if (p.isEmptyPalace) {
+                    const borrowed = appState.palaces[p.borrowedFromIdx].majorStars.map(s => s.name).join('、');
+                    starsDisplay = `<span class="text-xs text-inkMuted bg-gray-100 px-2 py-0.5 rounded-full">空宮(借${borrowed})</span>`;
+                } else {
+                    starsDisplay = p.majorStars.map(s =>
+                        `<span class="inline-block px-2 py-0.5 rounded-full bg-starMajor text-white text-xs font-serif-title font-bold">${s.name}</span>`
+                    ).join(' ');
+                }
+
+                const sihuaTag = p.sihuaList.map(sh =>
+                    `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${sh.class}">${sh.label}</span>`
+                ).join(' ');
+
+                let minorLine = '';
+                if (appState.chartMode === 'advanced' && (p.luckyStars.length || p.toughStars.length)) {
+                    const lStr = p.luckyStars.map(s => `<span class="text-starLucky">${s}</span>`).join(' ');
+                    const tStr = p.toughStars.map(s => `<span class="text-starTough">${s}</span>`).join(' ');
+                    minorLine = `<div class="mt-1.5 text-[11px] truncate">${lStr} ${tStr}</div>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-xl bg-white border transition-all cursor-pointer shadow-2xs ${isSelected ? 'border-amberGold ring-2 ring-amberGold/30 bg-[#FFFDF9]' : isRelated ? 'border-indigoMain/50 bg-[#F4F6FA]' : 'border-indigoMain/10'}`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-1">
+                            <span class="font-serif-title font-bold text-sm ${p.palaceKey === 'ming' ? 'text-amberGold bg-indigoMain px-2 py-0.5 rounded' : 'text-indigoMain'}">${p.palaceName}</span>
+                            ${p.isShenPalace ? '<span class="px-1 rounded bg-amberGold/20 text-[#B06000] text-[9px] font-bold">身</span>' : ''}
+                        </div>
+                        <span class="text-[11px] text-inkMuted">${p.stemName}${p.branchName} (${p.daxianRange})</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1 min-h-[26px]">
+                        ${starsDisplay}
+                        ${sihuaTag}
+                    </div>
+                    ${minorLine}
+                    <div class="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[11px]">
+                        <span class="text-inkMuted truncate max-w-[100px]">${p.palaceSubtitle}</span>
+                        <span class="text-amberGold font-bold">解析 →</span>
+                    </div>
+                `;
+                card.addEventListener('click', () => handleSelectPalace(p.branchIdx, true));
+                cardsContainer.appendChild(card);
+            });
+        }
+
+        function renderInspectorPanel() {
+            const current = appState.palaces[appState.selectedBranchIdx];
+            const related = getSanFangSiZheng(appState.selectedBranchIdx);
+
+            const oppPalace = appState.palaces[related.opposite];
+            const tri1Palace = appState.palaces[related.tri1];
+            const tri2Palace = appState.palaces[related.tri2];
+
+            // 主星角色解析卡片
+            let starsInsightHtml = '';
+            if (current.isEmptyPalace) {
+                const borrowedStars = oppPalace.majorStars;
+                starsInsightHtml = `
+                    <div class="p-4 rounded-xl bg-white border border-indigoMain/10 mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-2.5 py-0.5 rounded-full bg-gray-100 text-inkDark text-xs font-bold">空宮・借星安宮</span>
+                            <span class="text-xs text-inkMuted">向對面「${oppPalace.palaceName}」借能量</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-inkDark leading-relaxed mb-3">
+                            你的<strong>${current.palaceName}</strong>沒有主星駐守，這代表你在這個領域沒有僵化的預設立場，彈性與適應力極高，容易受到環境與「${oppPalace.palaceName}」星曜的影響：
+                        </p>
+                        <div class="space-y-2.5">
+                            ${borrowedStars.map(s => `
+                                <div class="p-3 rounded-lg bg-paper border-l-4 border-starMajor">
+                                    <div class="font-serif-title font-bold text-starMajor text-sm">${s.name}星（借用）：${s.role}</div>
+                                    <p class="text-xs text-inkMuted mt-1 leading-relaxed">${s.oneLiner}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                starsInsightHtml = `
+                    <div class="space-y-3 mb-4">
+                        ${current.majorStars.map(s => `
+                            <div class="p-4 rounded-xl bg-white border border-indigoMain/10 shadow-2xs">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <span class="font-serif-title font-bold text-base text-starMajor">${s.name}星</span>
+                                    <span class="px-2.5 py-0.5 rounded-full bg-starMajor/10 text-starMajor text-xs font-medium">${s.role}</span>
+                                </div>
+                                <p class="text-xs sm:text-sm text-inkDark leading-relaxed">${s.oneLiner}</p>
+                                <div class="mt-2.5 pt-2 border-t border-gray-100 text-xs text-inkMuted">
+                                    <strong class="text-indigoMain">💡 行動建議：</strong>${s.careerTip}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // 四化解析區塊
+            const sihuaSection = current.sihuaList.length > 0 ? current.sihuaList.map(sh => `
+                <div class="p-3.5 rounded-xl mb-3 ${sh.class}">
+                    <div class="font-bold text-xs sm:text-sm mb-1">✨ 能量催化劑：${sh.starName}${sh.label}</div>
+                    <p class="text-xs leading-relaxed opacity-90">${sh.desc}。這代表你在「${current.palaceName}」領域會特別有感應與動態變化。</p>
+                </div>
+            `).join('') : '';
+
+            // 進階模式吉煞星說明
+            let minorSection = '';
+            if (appState.chartMode === 'advanced' && (current.luckyStars.length > 0 || current.toughStars.length > 0)) {
+                minorSection = `
+                    <div class="mb-4 p-3.5 rounded-xl bg-white border border-gray-200 text-xs space-y-1.5">
+                        <div class="font-bold text-indigoMain">輔助星曜能量：</div>
+                        ${current.luckyStars.length ? `<p><span class="text-starLucky font-bold">吉星（${current.luckyStars.join('、')}）：</span>帶來貴人協助、才華展現與資源加分。</p>` : ''}
+                        ${current.toughStars.length ? `<p><span class="text-starTough font-bold">煞星（${current.toughStars.join('、')}）：</span>賦予突破框架的衝勁與抗壓性，提醒行事多一分耐心。</p>` : ''}
+                    </div>
+                `;
+            }
+
+            const html = `
+                <div class="flex items-center justify-between pb-3 mb-4 border-b border-indigoMain/10">
+                    <div>
+                        <span class="text-xs font-bold text-amberGold tracking-wider">${current.stemName}${current.branchName}宮．大限 ${current.daxianRange} 歲</span>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <h3 class="font-serif-title text-2xl font-bold text-indigoMain">${current.palaceName}</h3>
+                            ${current.isShenPalace ? '<span class="px-2 py-0.5 rounded-full bg-amberGold/20 text-[#B06000] text-xs font-bold">身宮所在</span>' : ''}
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 rounded-full bg-indigoMain text-white text-xs font-medium">${current.palaceSubtitle}</span>
+                </div>
+
+                <p class="text-xs sm:text-sm text-inkMuted leading-relaxed mb-4">
+                    ${current.palaceDesc}
+                </p>
+
+                ${starsInsightHtml}
+                ${sihuaSection}
+                ${minorSection}
+
+                <!-- 三方四正關聯宮位標籤 -->
+                <div class="pt-3 border-t border-indigoMain/10">
+                    <div class="text-xs font-bold text-indigoMain mb-2">🔗 三方四正支援網絡（點擊切換查看）：</div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="handleSelectPalace(${oppPalace.branchIdx}, false)" class="px-3 py-1.5 rounded-full bg-white hover:bg-indigoMain hover:text-white border border-indigoMain/20 text-xs font-medium text-indigoMain transition-colors cursor-pointer">
+                            對宮：${oppPalace.palaceName}
+                        </button>
+                        <button type="button" onclick="handleSelectPalace(${tri1Palace.branchIdx}, false)" class="px-3 py-1.5 rounded-full bg-white hover:bg-indigoMain hover:text-white border border-indigoMain/20 text-xs font-medium text-indigoMain transition-colors cursor-pointer">
+                            三合：${tri1Palace.palaceName}
+                        </button>
+                        <button type="button" onclick="handleSelectPalace(${tri2Palace.branchIdx}, false)" class="px-3 py-1.5 rounded-full bg-white hover:bg-indigoMain hover:text-white border border-indigoMain/20 text-xs font-medium text-indigoMain transition-colors cursor-pointer">
+                            三合：${tri2Palace.palaceName}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('desktop-inspector-panel').innerHTML = html;
+            document.getElementById('mobile-sheet-content').innerHTML = html;
+        }
+
+        function handleSelectPalace(branchIdx, openSheetOnMobile) {
+            appState.selectedBranchIdx = branchIdx;
+            renderChart();
+
+            // 若在手機版 (<768px) 且觸發點擊，彈出 Bottom Sheet
+            if (openSheetOnMobile && window.innerWidth < 768) {
+                openMobileBottomSheet();
+            }
+        }
+
+        function openMobileBottomSheet() {
+            const backdrop = document.getElementById('mobile-bottom-sheet-backdrop');
+            const sheet = document.getElementById('mobile-bottom-sheet');
+            backdrop.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                sheet.classList.remove('sheet-enter');
+                sheet.classList.add('sheet-active');
+            });
+        }
+
+        function closeMobileBottomSheet() {
+            const backdrop = document.getElementById('mobile-bottom-sheet-backdrop');
+            const sheet = document.getElementById('mobile-bottom-sheet');
+            sheet.classList.remove('sheet-active');
+            sheet.classList.add('sheet-enter');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 280);
+        }
+
+        // ==========================================
+        // 4. 渲染其他四大教學區塊 (學習地圖、14主星、專欄、FAQ)
+        // ==========================================
+
+        function renderRoadmapDetail(stepIdx) {
+            const data = ROADMAP_DETAILS[stepIdx];
+            const box = document.getElementById('roadmap-detail-box');
+
+            // 更新卡片高亮
+            document.querySelectorAll('.roadmap-card').forEach((card, idx) => {
+                if (idx === stepIdx) {
+                    card.classList.add('ring-2', 'ring-amberGold', 'bg-[#FFFDF9]');
+                } else {
+                    card.classList.remove('ring-2', 'ring-amberGold', 'bg-[#FFFDF9]');
+                }
+            });
+
+            box.innerHTML = `
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-4 mb-5 border-b border-gray-100">
+                    <div>
+                        <span class="text-xs font-bold text-amberGold">${data.step}</span>
+                        <h3 class="font-serif-title text-xl md:text-2xl font-bold text-indigoMain mt-1">${data.title}</h3>
+                    </div>
+                </div>
+                <p class="text-sm md:text-base text-inkDark leading-relaxed mb-6">${data.summary}</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    ${data.highlights.map(h => `
+                        <div class="p-4 rounded-xl bg-paper border border-indigoMain/10">
+                            <div class="font-bold text-indigoMain text-sm mb-1.5">✦ ${h.label}</div>
+                            <p class="text-xs sm:text-sm text-inkMuted leading-relaxed">${h.text}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderStarsEncyclopedia(filterGroup = 'all') {
+            const grid = document.getElementById('stars-grid');
+            const filtered = filterGroup === 'all'
+                ? FOURTEEN_STARS
+                : FOURTEEN_STARS.filter(s => s.group === filterGroup);
+
+            grid.innerHTML = filtered.map(star => `
+                <div onclick="openStarModal('${star.id}')" class="bg-paper hover:bg-white rounded-[12px] p-5 border border-indigoMain/10 hover:border-amberGold shadow-2xs hover:shadow-editorial transition-all cursor-pointer flex flex-col justify-between group">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-serif-title text-2xl font-bold text-starMajor group-hover:text-indigoMain transition-colors">${star.name}</span>
+                            <span class="px-2.5 py-0.5 rounded-full bg-white text-inkMuted text-[11px] border border-gray-200">${star.groupName}</span>
+                        </div>
+                        <div class="text-sm font-bold text-indigoMain mb-2">${star.role}</div>
+                        <div class="flex flex-wrap gap-1.5 mb-3">
+                            ${star.tags.map(t => `<span class="px-2 py-0.5 rounded-full bg-starMajor/10 text-starMajor text-[11px] font-medium">${t}</span>`).join('')}
+                        </div>
+                        <p class="text-xs text-inkMuted leading-relaxed">${star.oneLiner}</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-indigoMain/5 flex items-center justify-between text-xs font-bold text-amberGold">
+                        <span>查看優勢與盲點解析</span>
+                        <span class="group-hover:translate-x-1 transition-transform">→</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openStarModal(starId) {
+            const star = FOURTEEN_STARS.find(s => s.id === starId);
+            if (!star) return;
+
+            document.getElementById('modal-badge').textContent = `${star.groupName}｜主星人格檔案`;
+            document.getElementById('modal-body').innerHTML = `
+                <div class="flex items-center gap-3 mb-2">
+                    <h3 class="font-serif-title text-3xl font-bold text-starMajor">${star.name}星</h3>
+                    <span class="px-3 py-1 rounded-full bg-indigoMain text-amberGold text-xs font-bold">${star.role}</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5 mb-5">
+                    ${star.tags.map(t => `<span class="px-2.5 py-0.5 rounded-full bg-paper text-inkDark text-xs font-medium">${t}</span>`).join('')}
+                </div>
+
+                <p class="text-sm sm:text-base text-inkDark leading-relaxed mb-6 p-4 rounded-xl bg-paper border-l-4 border-amberGold">
+                    「${star.oneLiner}」
+                </p>
+
+                <div class="space-y-4">
+                    <div class="p-4 rounded-xl bg-[#E6F4EA]/50 border border-[#CEEAD6]">
+                        <h4 class="font-bold text-[#1E7E34] text-sm mb-1.5">🌟 天賦優勢（你的超能力）</h4>
+                        <p class="text-xs sm:text-sm text-inkDark leading-relaxed">${star.strengths}</p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-[#FCE8E6]/50 border border-[#FAD2CF]">
+                        <h4 class="font-bold text-[#C5221F] text-sm mb-1.5">🧭 潛在盲點（需要覺察的慣性）</h4>
+                        <p class="text-xs sm:text-sm text-inkDark leading-relaxed">${star.blindSpots}</p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-paper border border-indigoMain/10">
+                        <h4 class="font-bold text-indigoMain text-sm mb-1.5">💼 現代職場與生活建議</h4>
+                        <p class="text-xs sm:text-sm text-inkDark leading-relaxed">${star.careerTip}</p>
+                    </div>
+                </div>
+            `;
+            showModal();
+        }
+
+        function renderLifeColumns() {
+            const grid = document.getElementById('columns-grid');
+            grid.innerHTML = LIFE_COLUMNS.map((col, idx) => `
+                <article onclick="openColumnModal(${idx})" class="bg-white rounded-[12px] p-6 sm:p-7 shadow-editorial border border-indigoMain/5 hover:border-amberGold/60 transition-all cursor-pointer flex flex-col justify-between group">
+                    <div>
+                        <div class="flex items-center justify-between text-xs mb-3">
+                            <span class="px-3 py-1 rounded-full bg-amberGold/15 text-[#B06000] font-bold">${col.tag}</span>
+                            <span class="text-inkMuted">${col.readTime}</span>
+                        </div>
+                        <h3 class="font-serif-title text-xl font-bold text-indigoMain leading-snug mb-3 group-hover:text-amberGold transition-colors">
+                            ${col.title}
+                        </h3>
+                        <p class="text-sm text-inkMuted leading-relaxed">
+                            ${col.excerpt}
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-indigoMain">
+                        <span>閱讀完整白話教學</span>
+                        <span class="text-amberGold group-hover:translate-x-1 transition-transform">閱讀全文 →</span>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function openColumnModal(idx) {
+            const col = LIFE_COLUMNS[idx];
+            document.getElementById('modal-badge').textContent = col.tag;
+            document.getElementById('modal-body').innerHTML = `
+                <h3 class="font-serif-title text-2xl font-bold text-indigoMain leading-snug mb-3">${col.title}</h3>
+                <div class="text-xs text-inkMuted mb-6 pb-4 border-b border-gray-100">星圖學堂編輯部．現代知性專欄．${col.readTime}</div>
+                <div class="text-sm sm:text-base text-inkDark leading-relaxed">
+                    ${col.content}
+                </div>
+            `;
+            showModal();
+        }
+
+        function renderFAQ() {
+            const container = document.getElementById('faq-accordion');
+            container.innerHTML = FAQ_LIST.map((item, idx) => `
+                <div class="bg-paper rounded-[12px] border border-indigoMain/10 overflow-hidden">
+                    <button type="button" class="faq-toggle w-full px-5 py-4 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-indigoMain hover:bg-indigoMain/5 transition-colors cursor-pointer" data-idx="${idx}">
+                        <span>Q${idx + 1}. ${item.q}</span>
+                        <svg class="faq-arrow w-5 h-5 text-amberGold shrink-0 transition-transform duration-200 ${idx === 0 ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="faq-content px-5 pb-5 text-xs sm:text-sm text-inkMuted leading-relaxed border-t border-indigoMain/5 pt-3.5 ${idx === 0 ? '' : 'hidden'}">
+                        ${item.a}
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.faq-toggle').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const content = btn.nextElementSibling;
+                    const arrow = btn.querySelector('.faq-arrow');
+                    content.classList.toggle('hidden');
+                    arrow.classList.toggle('rotate-180');
+                });
+            });
+        }
+
+        function showModal() {
+            const modal = document.getElementById('universal-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function hideModal() {
+            const modal = document.getElementById('universal-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[m]));
+        }
+
+        // ==========================================
+        // 5. 事件綁定與初始化
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. 手機漢堡選單切換
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const hamIcon = document.getElementById('hamburger-icon');
+            const closeIcon = document.getElementById('close-icon');
+
+            menuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+                hamIcon.classList.toggle('hidden');
+                closeIcon.classList.toggle('hidden');
+            });
+
+            document.querySelectorAll('.mobile-nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    hamIcon.classList.remove('hidden');
+                    closeIcon.classList.add('hidden');
+                });
+            });
+
+            // 2. 不知道時辰提示展開 & 曆法切換顯示閏月選項
+            document.getElementById('hour-help-btn').addEventListener('click', () => {
+                document.getElementById('hour-help-box').classList.toggle('hidden');
+            });
+
+            document.getElementById('input-calendar').addEventListener('change', (e) => {
+                const leapWrap = document.getElementById('lunar-leap-wrapper');
+                leapWrap.classList.toggle('hidden', e.target.value !== 'lunar');
+            });
+
+            // 3. 排盤表單提交
+            document.getElementById('birth-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                appState.userName = document.getElementById('input-name').value.trim() || '星圖探索者';
+                appState.gender = document.querySelector('input[name="gender"]:checked').value;
+                appState.calendar = document.getElementById('input-calendar').value;
+                appState.birthDate = document.getElementById('input-date').value;
+                appState.isLeapMonth = document.getElementById('input-is-leap').checked;
+                appState.birthHour24 = Number(document.getElementById('input-hour').value);
+
+                generateChartData();
+                renderChart();
+
+                // 平滑滾動至互動命盤工作區
+                document.getElementById('chart-workspace').scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // 3.5 一鍵複製 AI 命理分析提示詞
+            document.getElementById('copy-ai-prompt-btn').addEventListener('click', () => {
+                const ordered = [...appState.palaces].sort((a, b) => a.palaceOrder - b.palaceOrder);
+                const lines = ordered.map(p => {
+                    const majors = p.isEmptyPalace
+                        ? `空宮(借對宮:${appState.palaces[p.borrowedFromIdx].majorStars.map(s => s.name).join('、')})`
+                        : p.majorStars.map(s => s.name).join('、');
+                    const sihuas = p.sihuaList.map(s => `${s.starName}${s.label}`).join('、');
+                    const minors = [...p.luckyStars, ...p.toughStars].join('、');
+                    return `- ${p.palaceName}${p.isShenPalace ? '[身宮]' : ''}(${p.stemName}${p.branchName}, 大限${p.daxianRange}歲)：主星【${majors}】${sihuas ? `｜四化【${sihuas}】` : ''}${minors ? `｜輔煞【${minors}】` : ''}`;
+                }).join('\n');
+
+                const promptText = `請擔任現代知性、去迷信化的紫微斗數顧問，幫我解析以下命盤：\n【基本資料】${appState.userName}｜${appState.metaInfo.genderText}｜${appState.metaInfo.juName}｜${appState.metaInfo.lunarDisplayStr}｜身宮在${appState.metaInfo.shenPalaceName}\n【十二宮星曜配置】\n${lines}\n\n請用現代心理學與職涯發展的白話視角，為我分析：\n1. 核心性格優勢與潛在盲點（命宮與三方四正）\n2. 最適合的職場舞台與工作模式（官祿宮）\n3. 財富累積思維（財帛宮與田宅宮）\n4. 親密關係互動建議（夫妻宮）`;
+
+                const textarea = document.createElement('textarea');
+                textarea.value = promptText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                const btnText = document.getElementById('copy-prompt-text');
+                btnText.textContent = '已複製！可貼給 AI 解析';
+                setTimeout(() => { btnText.textContent = '複製 AI 提示詞'; }, 2500);
+            });
+
+            // 4. 新手 / 進階模式切換
+            const btnBeg = document.getElementById('mode-beginner-btn');
+            const btnAdv = document.getElementById('mode-advanced-btn');
+            btnBeg.addEventListener('click', () => {
+                appState.chartMode = 'beginner';
+                btnBeg.className = 'px-3.5 py-1.5 rounded-full text-xs font-medium bg-indigoMain text-white shadow-xs transition-all';
+                btnAdv.className = 'px-3.5 py-1.5 rounded-full text-xs font-medium text-inkMuted hover:text-indigoMain transition-all';
+                document.querySelectorAll('.adv-legend').forEach(el => el.classList.add('hidden'));
+                renderChart();
+            });
+            btnAdv.addEventListener('click', () => {
+                appState.chartMode = 'advanced';
+                btnAdv.className = 'px-3.5 py-1.5 rounded-full text-xs font-medium bg-indigoMain text-white shadow-xs transition-all';
+                btnBeg.className = 'px-3.5 py-1.5 rounded-full text-xs font-medium text-inkMuted hover:text-indigoMain transition-all';
+                document.querySelectorAll('.adv-legend').forEach(el => el.classList.remove('hidden'));
+                renderChart();
+            });
+
+            // 5. 手機版視圖切換 (卡片閱讀 vs 12宮縮圖)
+            const btnMobCards = document.getElementById('mobile-view-cards');
+            const btnMobGrid = document.getElementById('mobile-view-grid');
+            const mobCardsWrap = document.getElementById('mobile-cards-container');
+            const classicGridWrap = document.getElementById('classic-grid-wrapper');
+
+            btnMobCards.addEventListener('click', () => {
+                appState.mobileView = 'cards';
+                btnMobCards.className = 'px-3 py-1.5 rounded-full text-xs font-medium bg-amberGold text-indigoMain font-bold transition-all';
+                btnMobGrid.className = 'px-3 py-1.5 rounded-full text-xs font-medium text-inkMuted transition-all';
+                mobCardsWrap.classList.remove('hidden');
+                classicGridWrap.classList.add('hidden');
+                classicGridWrap.classList.add('md:block');
+            });
+
+            btnMobGrid.addEventListener('click', () => {
+                appState.mobileView = 'grid';
+                btnMobGrid.className = 'px-3 py-1.5 rounded-full text-xs font-medium bg-amberGold text-indigoMain font-bold transition-all';
+                btnMobCards.className = 'px-3 py-1.5 rounded-full text-xs font-medium text-inkMuted transition-all';
+                mobCardsWrap.classList.add('hidden');
+                classicGridWrap.classList.remove('hidden');
+            });
+
+            // 6. 手機底部抽屜關閉事件
+            document.getElementById('close-bottom-sheet-btn').addEventListener('click', closeMobileBottomSheet);
+            document.getElementById('mobile-bottom-sheet-backdrop').addEventListener('click', (e) => {
+                if (e.target.id === 'mobile-bottom-sheet-backdrop') closeMobileBottomSheet();
+            });
+
+            // 7. 學習地圖卡片點擊切換
+            document.querySelectorAll('.roadmap-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    renderRoadmapDetail(Number(card.dataset.step));
+                });
+            });
+
+            // 8. 十四主星篩選按鈕
+            document.querySelectorAll('.star-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.star-filter-btn').forEach(b => {
+                        b.className = 'star-filter-btn px-4 py-2 rounded-full text-xs md:text-sm font-medium text-inkMuted hover:text-indigoMain transition-all';
+                    });
+                    btn.className = 'star-filter-btn px-4 py-2 rounded-full text-xs md:text-sm font-medium bg-indigoMain text-white transition-all';
+                    renderStarsEncyclopedia(btn.dataset.filter);
+                });
+            });
+
+            // 9. Modal 關閉事件
+            document.getElementById('close-modal-btn').addEventListener('click', hideModal);
+            document.getElementById('universal-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'universal-modal') hideModal();
+            });
+
+            // 初始渲染所有區塊
+            generateChartData();
+            renderChart();
+            renderRoadmapDetail(0);
+            renderStarsEncyclopedia('all');
+            renderLifeColumns();
+            renderFAQ();
+        });
+    </script>
+</body>
+</html>
